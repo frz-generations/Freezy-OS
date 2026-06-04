@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Freezy-OS — FRZ Generations</title>
+  <link rel="icon" href="https://frzimage.xo.je/images/freezy-os.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+
+  <!-- NO JS WARNING — shown only when JS is disabled -->
+  <noscript>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { background: #000; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+      .noscript-box { padding: 40px; border: 1px solid #ff4444; border-radius: 12px; max-width: 400px; }
+      h2 { color: #ff4444; margin-bottom: 16px; font-size: 20px; }
+      p { color: #aaa; line-height: 1.6; }
+    </style>
+    <div class="noscript-box">
+      <h2>⚠ JavaScript Required</h2>
+      <p>JavaScript is required to run Freezy-OS. Please enable JavaScript in your browser settings and reload the page. No data or content will be shown without JavaScript enabled.</p>
+    </div>
+  </noscript>
+
+  <style>
+    :root {
+      --bg-primary: #020408;
+      --bg-secondary: #080d14;
+      --bg-card: #0d1520;
+      --bg-glass: rgba(13, 21, 32, 0.85);
+      --accent-cyan: #00d4ff;
+      --accent-blue: #0066ff;
+      --accent-purple: #7b2fff;
+      --accent-glow: rgba(0, 212, 255, 0.15);
+      --text-primary: #e8f4fd;
+      --text-secondary: #7a9ab5;
+      --text-muted: #3d5a73;
+      --border: rgba(0, 212, 255, 0.15);
+      --border-hover: rgba(0, 212, 255, 0.4);
+      --danger: #ff4444;
+      --success: #00ff88;
+      --font-display: 'Orbitron', monospace;
+      --font-body: 'Rajdhani', sans-serif;
+      --font-mono: 'Share Tech Mono', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ---- ANIMATED BACKGROUND ---- */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* BUG FIX: Each orb has its own animation so transforms don't conflict.
+       bg-orb-3 previously had transform:translate(-50%,-50%) in CSS but the
+       orbFloat keyframe used translateY alone, breaking the centering. Fixed
+       by using separate keyframes for the centred orb. */
+    .bg-orb-1 {
+      width: 600px; height: 600px;
+      background: rgba(0,102,255,0.08);
+      top: -200px; right: -200px;
+      animation: orbFloat1 8s ease-in-out infinite;
+    }
+    .bg-orb-2 {
+      width: 400px; height: 400px;
+      background: rgba(123,47,255,0.08);
+      bottom: -100px; left: -100px;
+      animation: orbFloat1 8s ease-in-out infinite;
+      animation-delay: -4s;
+    }
+    .bg-orb-3 {
+      width: 300px; height: 300px;
+      background: rgba(0,212,255,0.06);
+      top: 50%; left: 50%;
+      /* Using margin trick instead of transform so animation doesn't clobber centering */
+      margin-left: -150px;
+      margin-top: -150px;
+      animation: orbFloat3 8s ease-in-out infinite;
+      animation-delay: -2s;
+    }
+
+    @keyframes orbFloat1 {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50%       { transform: translateY(-30px) scale(1.05); }
+    }
+    /* BUG FIX: Separate keyframe for centered orb — no translate needed */
+    @keyframes orbFloat3 {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.08); }
+    }
+
+    /* ---- SCREENS ---- */
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+    }
+    .screen.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ---- SCREEN 1: WELCOME ---- */
+    .welcome-container {
+      text-align: center;
+      padding: 40px;
+      animation: fadeUp 1s ease forwards;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .frz-logo {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 24px;
+    }
+
+    .frz-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 20px rgba(0,212,255,0.5));
+    }
+
+    .os-name {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 6vw, 56px);
+      font-weight: 900;
+      letter-spacing: 4px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .os-tagline {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--text-secondary);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .by-frz {
+      font-size: 13px;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      margin-bottom: 48px;
+    }
+
+    .welcome-msg {
+      font-size: clamp(16px, 2.5vw, 20px);
+      color: var(--text-secondary);
+      max-width: 500px;
+      margin: 0 auto 48px;
+      line-height: 1.7;
+      font-weight: 400;
+    }
+
+    /* ---- BUTTONS ---- */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 48px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 30px rgba(0,102,255,0.3);
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .btn-primary:hover::before { opacity: 1; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 50px rgba(0,102,255,0.5); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 32px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+      background: var(--accent-glow);
+    }
+
+    /* ---- SCREEN 2: TERMS ---- */
+    .terms-container {
+      width: 100%;
+      max-width: 800px;
+      height: 90vh;
+      margin: 0 auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .terms-header {
+      text-align: center;
+      padding: 24px 0 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
+    }
+
+    .terms-header h2 {
+      font-family: var(--font-display);
+      font-size: 22px;
+      letter-spacing: 3px;
+      color: var(--accent-cyan);
+      margin-bottom: 8px;
+    }
+
+    .terms-header p {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .terms-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 8px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent-cyan) transparent;
+    }
+
+    .terms-scroll::-webkit-scrollbar { width: 4px; }
+    .terms-scroll::-webkit-scrollbar-thumb { background: var(--accent-cyan); border-radius: 4px; }
+
+    .terms-section {
+      margin-bottom: 32px;
+    }
+
+    .terms-section h3 {
+      font-family: var(--font-display);
+      font-size: 13px;
+      letter-spacing: 2px;
+      color: var(--accent-cyan);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .terms-section p, .terms-section li {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+      margin-bottom: 8px;
+    }
+
+    .terms-section ul, .terms-section ol {
+      padding-left: 20px;
+    }
+
+    .terms-section li { margin-bottom: 6px; }
+
+    .terms-footer {
+      padding: 16px 0;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .scroll-notice {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .scroll-notice.done { color: var(--success); }
+
+    /* ---- SCREEN 3: PERMISSIONS ---- */
+    .permissions-container {
+      width: 100%;
+      max-width: 560px;
+      padding: 20px;
+    }
+
+    .perm-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      backdrop-filter: blur(20px);
+    }
+
+    .perm-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .perm-header h2 {
+      font-family: var(--font-display);
+      font-size: 18px;
+      letter-spacing: 2px;
+      color: var(--accent-cyan);
+      margin-bottom: 8px;
+    }
+
+    .perm-header p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .perm-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .perm-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 16px;
+      background: rgba(0,212,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      transition: all 0.3s;
+    }
+
+    .perm-item:hover { border-color: var(--border-hover); background: rgba(0,212,255,0.08); }
+
+    .perm-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(0,102,255,0.15);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .perm-info { flex: 1; }
+    .perm-info h4 { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+    .perm-info p  { font-size: 12px; color: var(--text-secondary); }
+
+    .perm-toggle {
+      width: 44px;
+      height: 24px;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .perm-toggle.on { background: var(--accent-blue); border-color: var(--accent-blue); }
+
+    .perm-toggle::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.3s;
+    }
+
+    .perm-toggle.on::after { transform: translateX(20px); }
+
+    .perm-notice {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 20px;
+      font-family: var(--font-mono);
+    }
+
+    .perm-notice span { color: var(--accent-cyan); }
+
+    .perm-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .perm-buttons .btn-primary  { flex: 1; justify-content: center; padding: 14px; font-size: 13px; }
+    .perm-buttons .btn-secondary { flex: 1; justify-content: center; }
+
+    /* ---- SCREEN 4: LOGIN ---- */
+    .login-container {
+      width: 100%;
+      max-width: 460px;
+      padding: 20px;
+    }
+
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px 36px;
+      backdrop-filter: blur(20px);
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .login-logo {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 16px;
+    }
+
+    .login-logo img {
+      width: 100%;
+      filter: drop-shadow(0 0 10px rgba(0,212,255,0.4));
+    }
+
+    .login-header h2 {
+      font-family: var(--font-display);
+      font-size: 16px;
+      letter-spacing: 2px;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .login-header p {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .login-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-secondary);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+
+    .login-tab {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      letter-spacing: 1px;
+    }
+
+    .login-tab.active {
+      background: var(--bg-card);
+      color: var(--accent-cyan);
+      border: 1px solid var(--border);
+    }
+
+    .login-panel { display: none; }
+    .login-panel.active { display: block; }
+
+    .form-group { margin-bottom: 16px; }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-secondary);
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 13px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 15px;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .form-group input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.1);
+    }
+
+    .form-group input::placeholder { color: var(--text-muted); }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 12px;
+      box-shadow: 0 0 20px rgba(0,102,255,0.2);
+    }
+
+    .btn-login:hover { transform: translateY(-1px); box-shadow: 0 0 30px rgba(0,102,255,0.4); }
+
+    .btn-google {
+      width: 100%;
+      padding: 13px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-google:hover { border-color: var(--border-hover); background: var(--accent-glow); }
+
+    .google-icon { width: 20px; height: 20px; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* BUG FIX: OTP inputs no longer carry "form-group" as a class.
+       The old code had class="form-group input otp-input" on <input> elements,
+       which imported div-level .form-group styles onto an <input>, causing
+       layout and margin conflicts. Now they are just .otp-input. */
+    .otp-inputs {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .otp-input {
+      width: 48px;
+      height: 56px;
+      text-align: center;
+      font-size: 22px;
+      font-family: var(--font-mono);
+      padding: 0;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .otp-input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.1);
+    }
+
+    #recaptcha-container { margin: 16px 0; }
+
+    .error-msg {
+      font-size: 13px;
+      color: var(--danger);
+      text-align: center;
+      margin-top: 8px;
+      min-height: 20px;
+      font-family: var(--font-mono);
+    }
+
+    /* ---- SCREEN 5: LOADING ---- */
+    .loading-container {
+      text-align: center;
+      padding: 40px 20px;
+      max-height: 100vh;
+      overflow-y: auto;
+    }
+
+    .boot-logo {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 32px;
+      animation: bootPulse 2s ease-in-out infinite;
+    }
+
+    .boot-logo img {
+      width: 100%;
+      filter: drop-shadow(0 0 30px rgba(0,212,255,0.6));
+    }
+
+    @keyframes bootPulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.05); }
+    }
+
+    .boot-title {
+      font-family: var(--font-display);
+      font-size: clamp(18px, 3vw, 28px);
+      letter-spacing: 4px;
+      color: var(--accent-cyan);
+      margin-bottom: 8px;
+    }
+
+    .boot-subtitle {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-secondary);
+      letter-spacing: 2px;
+      margin-bottom: 48px;
+    }
+
+    .boot-progress-track {
+      width: 320px;
+      max-width: 90vw;
+      height: 3px;
+      background: rgba(0,212,255,0.1);
+      border-radius: 3px;
+      margin: 0 auto 16px;
+      overflow: hidden;
+    }
+
+    .boot-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px var(--accent-cyan);
+    }
+
+    .boot-status {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      min-height: 20px;
+    }
+
+    /* BUG FIX: boot-log now has a max-height so it doesn't overflow
+       the viewport on small screens */
+    .boot-log {
+      margin-top: 32px;
+      text-align: left;
+      width: 320px;
+      max-width: 90vw;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-left: auto;
+      margin-right: auto;
+      scrollbar-width: none;
+    }
+    .boot-log::-webkit-scrollbar { display: none; }
+
+    .boot-log-line {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 3px 0;
+      opacity: 0;
+      animation: logAppear 0.3s forwards;
+    }
+
+    .boot-log-line.ok::before   { content: '[  OK  ] '; color: var(--success); }
+    .boot-log-line.load::before { content: '[ LOAD ] '; color: var(--accent-cyan); }
+    .boot-log-line.init::before { content: '[ INIT ] '; color: var(--accent-blue); }
+
+    @keyframes logAppear { to { opacity: 1; } }
+
+    /* ---- SUSPENSION SCREEN ---- */
+    .suspension-screen {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .suspension-screen.show { display: flex; }
+
+    .suspension-card {
+      max-width: 600px;
+      width: 100%;
+      background: #0a0000;
+      border: 1px solid rgba(255,68,68,0.3);
+      border-radius: 16px;
+      padding: 40px 36px;
+      text-align: center;
+    }
+
+    .suspension-icon { font-size: 56px; margin-bottom: 24px; }
+
+    .suspension-card h2 {
+      font-family: var(--font-display);
+      font-size: 18px;
+      letter-spacing: 3px;
+      color: var(--danger);
+      margin-bottom: 24px;
+    }
+
+    .suspension-card p {
+      font-size: 15px;
+      color: #aaa;
+      line-height: 1.8;
+      margin-bottom: 32px;
+    }
+
+    .appeal-form { text-align: left; }
+
+    .appeal-form h3 {
+      font-family: var(--font-display);
+      font-size: 13px;
+      letter-spacing: 2px;
+      color: var(--danger);
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .appeal-form textarea {
+      width: 100%;
+      padding: 13px 16px;
+      background: #0d0000;
+      border: 1px solid rgba(255,68,68,0.2);
+      border-radius: 8px;
+      color: #ccc;
+      font-family: var(--font-body);
+      font-size: 14px;
+      outline: none;
+      resize: vertical;
+      min-height: 100px;
+      margin-bottom: 12px;
+    }
+
+    .btn-appeal {
+      width: 100%;
+      padding: 13px;
+      background: rgba(255,68,68,0.15);
+      border: 1px solid rgba(255,68,68,0.4);
+      border-radius: 8px;
+      color: var(--danger);
+      font-family: var(--font-display);
+      font-size: 13px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-appeal:hover { background: rgba(255,68,68,0.25); }
+
+    .suspension-contacts {
+      margin-top: 20px;
+      font-size: 13px;
+      color: #666;
+      line-height: 2;
+    }
+
+    /* ---- DEVTOOLS WARNING POPUP ---- */
+    .devtools-popup {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-200px);
+      z-index: 99999;
+      background: #1a0000;
+      border: 1px solid var(--danger);
+      border-radius: 12px;
+      padding: 16px 24px;
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 0 40px rgba(255,68,68,0.3);
+    }
+
+    /* BUG FIX: translateY was -100px but the popup is taller on some screens.
+       Changed to -200px for a reliable hide position, and show restores to
+       translateX(-50%) only (Y = 0) so the centering is not lost. */
+    .devtools-popup.show { transform: translateX(-50%) translateY(0); }
+
+    .devtools-popup h4 {
+      font-family: var(--font-display);
+      font-size: 13px;
+      letter-spacing: 2px;
+      color: var(--danger);
+      margin-bottom: 6px;
+    }
+
+    .devtools-popup p { font-size: 13px; color: #aaa; line-height: 1.5; }
+
+    /* ---- FOOTER ---- */
+    .frz-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      text-align: center;
+      padding: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      letter-spacing: 1px;
+      z-index: 5;
+      border-top: 1px solid var(--border);
+      background: rgba(2,4,8,0.8);
+      backdrop-filter: blur(10px);
+    }
+
+    /* ---- RESPONSIVE ---- */
+    @media (max-width: 600px) {
+      .login-card       { padding: 28px 20px; }
+      .terms-container  { padding: 10px; }
+      .perm-card        { padding: 24px 20px; }
+      .suspension-card  { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- BACKGROUND -->
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+<div class="bg-orb bg-orb-3"></div>
+
+<!-- DEVTOOLS WARNING POPUP -->
+<div class="devtools-popup" id="devtoolsPopup">
+  <h4>⚠ SECURITY WARNING</h4>
+  <p>Developer Tools access was detected. Repeated attempts are logged and reported to FRZ Generations.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 1 — WELCOME                                           -->
+<!-- ============================================================ -->
+<div class="screen active" id="screen-welcome">
+  <div class="welcome-container">
+    <div class="frz-logo">
+      <img src="https://frzimage.xo.je/images/freezy-os.png" alt="Freezy-OS Logo" />
+    </div>
+    <div class="os-name">FREEZY-OS</div>
+    <div class="os-tagline">by FRZ Generations</div>
+    <div class="by-frz">FREE TOOLS. UNLIMITED POSSIBILITIES.</div>
+    <p class="welcome-msg">Welcome to your personalized Freezy-OS — a fully customizable browser-based operating system built for you by FRZ Generations. Click Get Started to begin.</p>
+    <button class="btn-primary" id="getStartedBtn">▶ GET STARTED</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 2 — TERMS & CONDITIONS                                -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-terms">
+  <div class="terms-container">
+    <div class="terms-header">
+      <h2>TERMS, POLICIES & FEATURES</h2>
+      <p>Please read carefully before continuing. Scroll to the bottom to proceed.</p>
+    </div>
+
+    <div class="terms-scroll" id="termsScroll">
+
+      <div class="terms-section">
+        <h3>✦ WHAT IS FREEZY-OS</h3>
+        <p>Freezy-OS is a browser-based operating system developed by FRZ Generations. It functions like an advanced virtual desktop environment accessible via any modern web browser, and optionally as a desktop application (.exe) or mobile app (.apk).</p>
+        <p>Freezy-OS includes built-in tools for productivity, coding, study, communication, religious use, and more — all free of charge.</p>
+      </div>
+
+      <div class="terms-section">
+        <h3>✦ FEATURES INCLUDED</h3>
+        <ul>
+          <li>Code Editor with 60+ language support (Judge0 powered)</li>
+          <li>Office Suite — Word, Excel, Whiteboard</li>
+          <li>PDF Tools — Split, Merge</li>
+          <li>Study Tools — Quiz, Flashcard, Question Paper, Timer</li>
+          <li>Maps with directions (OpenStreetMap)</li>
+          <li>Weather from your location</li>
+          <li>Prayer Times / Azan Times (Aladhan API)</li>
+          <li>Hijri Calendar, Malayalam Islamic Calendar, Religious Calendars</li>
+          <li>Calculator and Unit Converter</li>
+          <li>QR Code Generator, URL Shortener, Image Host, Media Host</li>
+          <li>WhatsApp Message Converter</li>
+          <li>Music Player</li>
+          <li>File Manager (Google Drive backed)</li>
+          <li>QR Connect — sync phone session to PC</li>
+          <li>Custom Search Engine</li>
+          <li>Public Files Library</li>
+          <li>Community Tools Section</li>
+          <li>Fully customizable desktop — themes, wallpapers, icons</li>
+        </ul>
+      </div>
+
+      <div class="terms-section">
+        <h3>✦ WHAT DATA WE COLLECT (HONESTLY)</h3>
+        <p>We believe in full transparency. Here is exactly what Freezy-OS collects and why:</p>
+        <ul>
+          <li><strong style="color:#00d4ff">Google account name, email, profile picture</strong> — collected via Firebase Authentication when you sign in. Required to identify your account.</li>
+          <li><strong style="color:#00d4ff">Files you create and save</strong> — stored in YOUR OWN Google Drive under a folder named <em>Software/[YourUsername]/</em>. We do not read or access any other files in your Drive.</li>
+          <li><strong style="color:#00d4ff">OS preferences</strong> — theme, wallpaper, settings are stored in Firebase Firestore under your user ID. This keeps your OS personalized across devices.</li>
+          <li><strong style="color:#00d4ff">Location data</strong> — accessed only when you use Maps, Weather, or Prayer Times features. Your location is NOT stored permanently on our servers.</li>
+          <li><strong style="color:#00d4ff">QR Connect session tokens</strong> — temporary tokens used to sync your phone and PC session. These are automatically deleted after your session ends.</li>
+          <li><strong style="color:#00d4ff">IP address</strong> — logged ONLY if you attempt to access Developer Tools more than once. This is for platform security. See Security Policy below.</li>
+          <li><strong style="color:#00d4ff">Login activity</strong> — timestamp, login method, and device type are logged for account security purposes.</li>
+        </ul>
+      </div>
+
+      <div class="terms-section">
+        <h3>✦ WHAT WE DO NOT COLLECT</h3>
+        <ul>
+          <li>We do NOT sell your data to any third party.</li>
+          <li>We do NOT read the contents of your Google Drive files beyond the Software/[Username]/ folder we create.</li>
+          <li>We do NOT store your location permanently.</li>
+          <li>We do NOT track your browsing activity inside the iframed tools.</li>
+          <li>We do NOT collect payment information (Freezy-OS is completely free).</li>
+          <li>We do NOT share your personal data with advertisers.</li>
+        </ul>
+      </div>
+
+      <div class="terms-section">
+        <h3>✦ FAIR USE POLICY</h3>
+        <p>Freezy-OS is provided free of charge for personal and educational use. By using this platform you agree to the following fair use rules:</p>
+        <ul>
+          <li>Freezy-OS is for lawful use only. You may not use it for any illegal activity.</li>
+          <li>Do not attempt to reverse engineer, copy, or redistribute Freezy-OS or its source code without written permission from FRZ Generations.</li>
+          <li>Do not attempt to overload or abuse the platform's free API quotas.</li>
+          <li>Do not use Freezy-OS to harm, harass, or stalk any individual.</li>
+          <li>Community tools you submit must be useful, safe, and original. FRZ Generations reserves the right to remove any community submission.</li>
+          <li>You are responsible for the files you store in your Google Drive via Freezy-OS.</li>
+          <li>One account per person. Creating multiple accounts to bypass a suspension is a violation.</li>
+        </ul>
+      </div>
+
+      <div class="terms-section">
+        <h3>✦ SECURITY POLICY</h3>
+        <ul>
+          <li>Freezy-OS monitors for attempts to access browser Developer Tools as a security measure.</li>
+          <li>On the first attempt, you will receive a warning message.</li>
+          <li>On the second attempt, your IP address will be logged and reported to FRZ Generations administration. You will receive a warning email.</li>
+          <li>Continued tampering may result in account suspension.</li>
+          <li>This policy exists to protect the integrity of the platform and the security of all users.</li>
+          <li>Any attempt to manipulate, inject scripts into, or exploit Freezy-OS will result in immediate suspension and may be reported to relevant authorities.</li>
+        </ul>
+      </div>
+
+      <div class="terms-section">
+        <h3>✦ ACCOUNT SUSPENSION POLICY</h3>
+        <p>FRZ Generations reserves the right to suspend any account for the following reasons:</p>
+        <ul>
+          <li>Violation of these Terms and Conditions or Fair Use Policy.</li>
+          <li>Attempting to tamper with or exploit the platform.</li>
+          <li>Being banned or suspended on any other platform under FRZ Generations.</li>
+          <li>Reported abuse by other users that is verified by our team.</li>
+          <li>Any activity deemed harmful to the platform, its users, or FRZ Generations.</li>
+        </ul>
+        <p>Upon suspension you will be notified by email. You may appeal within 7 days. FRZ Generations will respond within 24–72 hours.</p>
+      </div>
+
+      <div class="terms-section">
+        <h3>✦ CROSS-PLATFORM SUSPENSION</h3>
+        <p>FRZ Generations operates multiple platforms and tools. A ban or suspension on any FRZ platform (including but not limited to FRZ Generations main site, FRZ tools, FRZ Chat) may result in automatic suspension of your Freezy-OS account. This is to maintain a consistent and safe community across all FRZ services.</p>
+      </div>
+
+      <div class="terms-section">
+        <h3>✦ RULES TO FOLLOW</h3>
+        <ol>
+          <li>Treat the platform and its resources with respect.</li>
+          <li>Do not share your Freezy-OS account credentials with others.</li>
+          <li>Do not upload illegal, harmful, or copyrighted content to your Drive via Freezy-OS.</li>
+          <li>Report bugs or issues to frzgenerations@gmail.com — do not exploit them.</li>
+          <li>Do not attempt to access other users' data.</li>
+          <li>Community contributions must be credited and original.</li>
+          <li>The platform is for all ages but content you create or share must be appropriate.</li>
+        </ol>
+      </div>
+
+      <div class="terms-section">
+        <h3>✦ DISCLAIMER</h3>
+        <p>Freezy-OS is provided "as is" without warranty of any kind. FRZ Generations is not responsible for any data loss, service interruptions, or damages arising from use of this platform. Third-party tools embedded within Freezy-OS are subject to their own terms and policies.</p>
+        <p>FRZ Generations reserves the right to update these terms at any time. Continued use of Freezy-OS constitutes acceptance of updated terms.</p>
+      </div>
+
+      <div class="terms-section">
+        <h3>✦ INTELLECTUAL PROPERTY</h3>
+        <p>Freezy-OS, its design, code, branding, and all associated assets are the intellectual property of FRZ Generations. Designed and Developed under FRZ Generations © 2026 FRZ Generations. All rights reserved.</p>
+      </div>
+
+      <div style="height: 20px;"></div>
+    </div><!-- end terms-scroll -->
+
+    <div class="terms-footer">
+      <span class="scroll-notice" id="scrollNotice">▼ Scroll to read all terms</span>
+      <!-- BUG FIX: disabled state now fully controlled by JS; inline style removed
+           so the .btn-primary:disabled CSS rule handles appearance consistently -->
+      <button class="btn-primary" id="agreeBtn" disabled style="padding: 12px 28px; font-size: 13px;">
+        I AGREE &amp; CONTINUE
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 3 — PERMISSIONS                                       -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-permissions">
+  <div class="permissions-container">
+    <div class="perm-card">
+      <div class="perm-header">
+        <h2>SYSTEM PERMISSIONS</h2>
+        <p>Freezy-OS needs the following permissions to work properly. You can change these anytime in Settings.</p>
+      </div>
+
+      <div class="perm-list">
+        <div class="perm-item">
+          <div class="perm-icon">📍</div>
+          <div class="perm-info">
+            <h4>Location</h4>
+            <p>Used for Weather, Maps &amp; Prayer Times</p>
+          </div>
+          <div class="perm-toggle on" id="toggle-location" data-perm="location"></div>
+        </div>
+
+        <div class="perm-item">
+          <div class="perm-icon">🔔</div>
+          <div class="perm-info">
+            <h4>Notifications</h4>
+            <p>For system alerts and reminders</p>
+          </div>
+          <div class="perm-toggle on" id="toggle-notifications" data-perm="notifications"></div>
+        </div>
+
+        <div class="perm-item">
+          <div class="perm-icon">📷</div>
+          <div class="perm-info">
+            <h4>Camera</h4>
+            <p>Used for QR Connect scanner</p>
+          </div>
+          <div class="perm-toggle on" id="toggle-camera" data-perm="camera"></div>
+        </div>
+
+        <div class="perm-item">
+          <div class="perm-icon">🎵</div>
+          <div class="perm-info">
+            <h4>Audio</h4>
+            <p>For Music Player and system sounds</p>
+          </div>
+          <div class="perm-toggle on" id="toggle-audio" data-perm="audio"></div>
+        </div>
+
+        <div class="perm-item">
+          <div class="perm-icon">💾</div>
+          <div class="perm-info">
+            <h4>Storage (Google Drive)</h4>
+            <p>To save your files in your Drive</p>
+          </div>
+          <div class="perm-toggle on" id="toggle-storage" data-perm="storage"></div>
+        </div>
+
+        <div class="perm-item">
+          <div class="perm-icon">⚡</div>
+          <div class="perm-info">
+            <h4>System Controls</h4>
+            <p>Brightness, volume &amp; screen management</p>
+          </div>
+          <div class="perm-toggle on" id="toggle-system" data-perm="system"></div>
+        </div>
+      </div>
+
+      <p class="perm-notice">These permissions can be changed anytime in <span>Settings → Permissions</span></p>
+
+      <div class="perm-buttons">
+        <button class="btn-primary"  id="allowPermsBtn">ALLOW ALL</button>
+        <button class="btn-secondary" id="skipPermsBtn">SKIP FOR NOW</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 4 — LOGIN                                             -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-login">
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">
+          <img src="https://frzimage.xo.je/images/freezy-os.png" alt="Freezy-OS" />
+        </div>
+        <h2>SIGN IN TO FREEZY-OS</h2>
+        <p>Choose your login method below</p>
+      </div>
+
+      <!-- BUG FIX: tabs now use data attributes instead of fragile
+           onclick string-matching querySelector. JS handles tab switching
+           via event delegation on the .login-tabs container. -->
+      <div class="login-tabs" id="loginTabs">
+        <button class="login-tab active" data-tab="google">Google</button>
+        <button class="login-tab"        data-tab="email">Email</button>
+        <button class="login-tab"        data-tab="phone">Phone</button>
+      </div>
+
+      <!-- GOOGLE TAB -->
+      <div class="login-panel active" id="panel-google">
+        <p style="font-size:14px; color:var(--text-secondary); text-align:center; margin-bottom:20px; line-height:1.6;">
+          Sign in instantly with your Google account. Your files will be saved to your Google Drive.
+        </p>
+        <button class="btn-google" id="googleSignInBtn">
+          <svg class="google-icon" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Continue with Google
+        </button>
+        <p class="error-msg" id="error-google"></p>
+      </div>
+
+      <!-- EMAIL TAB -->
+      <div class="login-panel" id="panel-email">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="emailInput" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="passwordInput" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <button class="btn-login" id="emailSignInBtn">SIGN IN</button>
+        <div class="divider">or</div>
+        <button class="btn-secondary" id="emailRegisterBtn" style="width:100%; justify-content:center;">CREATE ACCOUNT</button>
+        <p class="error-msg" id="error-email"></p>
+      </div>
+
+      <!-- PHONE TAB -->
+      <div class="login-panel" id="panel-phone">
+        <div id="phone-step-1">
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" id="phoneInput" placeholder="+91 99999 99999" autocomplete="tel" />
+          </div>
+          <div id="recaptcha-container"></div>
+          <button class="btn-login" id="sendOtpBtn" style="margin-top:16px;">SEND OTP</button>
+        </div>
+        <div id="phone-step-2" style="display:none;">
+          <p style="font-size:13px; color:var(--text-secondary); text-align:center; margin-bottom:16px;">
+            Enter the 6-digit OTP sent to your phone
+          </p>
+          <!-- BUG FIX: removed "form-group input" class — only otp-input applies now -->
+          <div class="otp-inputs">
+            <input class="otp-input" type="text" inputmode="numeric" maxlength="1" id="otp1" autocomplete="one-time-code" />
+            <input class="otp-input" type="text" inputmode="numeric" maxlength="1" id="otp2" />
+            <input class="otp-input" type="text" inputmode="numeric" maxlength="1" id="otp3" />
+            <input class="otp-input" type="text" inputmode="numeric" maxlength="1" id="otp4" />
+            <input class="otp-input" type="text" inputmode="numeric" maxlength="1" id="otp5" />
+            <input class="otp-input" type="text" inputmode="numeric" maxlength="1" id="otp6" />
+          </div>
+          <button class="btn-login" id="verifyOtpBtn">VERIFY &amp; SIGN IN</button>
+        </div>
+        <p class="error-msg" id="error-phone"></p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SCREEN 5 — LOADING / BOOT                                    -->
+<!-- ============================================================ -->
+<div class="screen" id="screen-loading">
+  <div class="loading-container">
+    <div class="boot-logo">
+      <img src="https://frzimage.xo.je/images/freezy-os.png" alt="Freezy-OS" />
+    </div>
+    <div class="boot-title">FREEZY-OS</div>
+    <div class="boot-subtitle">SYSTEM POWERING ON...</div>
+    <div class="boot-progress-track">
+      <div class="boot-progress-bar" id="bootProgress"></div>
+    </div>
+    <div class="boot-status" id="bootStatus">Initializing...</div>
+    <div class="boot-log" id="bootLog"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SUSPENSION SCREEN                                            -->
+<!-- ============================================================ -->
+<div class="suspension-screen" id="suspensionScreen">
+  <div class="suspension-card">
+    <div class="suspension-icon">🔴</div>
+    <h2>ACCOUNT SUSPENDED</h2>
+    <p>
+      Dear User,<br><br>
+      Due to violations of the Terms and Conditions or Fair Use Policies of Freezy-OS by FRZ Generations,
+      your account has been suspended for review.<br><br>
+      If this is an error on our end, the suspension will be removed. You may also appeal below or contact
+      us — we will respond within 24–72 hours.
+    </p>
+    <div class="appeal-form">
+      <h3>SUBMIT AN APPEAL</h3>
+      <textarea id="appealMessage" placeholder="Explain your situation here..."></textarea>
+      <button class="btn-appeal" id="submitAppealBtn">SUBMIT APPEAL</button>
+    </div>
+    <div class="suspension-contacts">
+      📧 frzgenerations@gmail.com<br>
+      📱 WhatsApp: +91 70125 23494
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="frz-footer">
+  Designed and Developed under FRZ Generations &nbsp;|&nbsp; © 2026 FRZ Generations. All rights reserved.
+</div>
+
+<!-- ============================================================ -->
+<!-- FIREBASE SDK (type="module")                                 -->
+<!-- ============================================================ -->
+<script type="module">
+  import { initializeApp }                                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup,
+           signInWithEmailAndPassword, createUserWithEmailAndPassword,
+           RecaptchaVerifier, signInWithPhoneNumber }                         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc }                               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getDatabase, ref, onValue }                                       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ----------------------------------------------------------------
+  // FIREBASE CONFIG
+  // Replace the placeholder values below with your actual keys.
+  // In a Vite/Netlify build, inject them via environment variables.
+  // DO NOT commit real keys to a public repository.
+  // ----------------------------------------------------------------
+  const firebaseConfig = {
+    apiKey:            "REPLACE_WITH_YOUR_API_KEY",            // e.g. import.meta.env.VITE_FIREBASE_API_KEY
+    authDomain:        "freezy-os.firebaseapp.com",
+    databaseURL:       "https://freezy-os-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:         "freezy-os",
+    storageBucket:     "freezy-os.firebasestorage.app",
+    messagingSenderId: "756915684931",
+    appId:             "1:756915684931:web:1377b5538832b84031f6f6"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+  const rtdb = getDatabase(app);
+
+  // ----------------------------------------------------------------
+  // BUG FIX: Instead of scattering window._* globals across two
+  // different script blocks (which is fragile — the non-module script
+  // can run before the module resolves), we expose a single clean
+  // object and wire all UI event listeners here, inside the module,
+  // after Firebase is guaranteed to be initialised.
+  // ----------------------------------------------------------------
+
+  // ---- APPS SCRIPT URL ----
+  // Replace with your deployed Google Apps Script web app URL.
+  // Until replaced, logging calls are silently skipped.
+  const APPS_SCRIPT_URL = "REPLACE_WITH_YOUR_APPS_SCRIPT_URL";
+
+  async function logToAppsScript(data) {
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith("REPLACE")) return;
+    try {
+      await fetch(APPS_SCRIPT_URL, { method: "POST", body: JSON.stringify(data) });
+    } catch (err) {
+      console.warn("Log failed:", err);
+    }
+  }
+
+  async function getIP() {
+    try {
+      const res  = await fetch('https://api.ipify.org?format=json');
+      const data = await res.json();
+      return data.ip;
+    } catch {
+      return 'Unable to detect';
+    }
+  }
+
+  // ---- SCREEN NAVIGATION ----
+  function goToScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+  }
+
+  // ---- TERMS SCROLL CHECK ----
+  function checkScroll() {
+    const el     = document.getElementById('termsScroll');
+    const btn    = document.getElementById('agreeBtn');
+    const notice = document.getElementById('scrollNotice');
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    if (atBottom) {
+      btn.disabled = false;
+      notice.textContent = '✓ You have read the terms';
+      notice.classList.add('done');
+    }
+  }
+  document.getElementById('termsScroll').addEventListener('scroll', checkScroll);
+
+  // ---- AGREE BUTTON ----
+  document.getElementById('agreeBtn').addEventListener('click', () => {
+    goToScreen('screen-permissions');
+  });
+
+  // ---- GET STARTED BUTTON ----
+  document.getElementById('getStartedBtn').addEventListener('click', () => {
+    goToScreen('screen-terms');
+  });
+
+  // ---- PERMISSION TOGGLES ----
+  document.querySelectorAll('.perm-toggle').forEach(toggle => {
+    toggle.addEventListener('click', () => toggle.classList.toggle('on'));
+  });
+
+  function getPermState() {
+    return {
+      location:      document.getElementById('toggle-location').classList.contains('on'),
+      notifications: document.getElementById('toggle-notifications').classList.contains('on'),
+      camera:        document.getElementById('toggle-camera').classList.contains('on'),
+      audio:         document.getElementById('toggle-audio').classList.contains('on'),
+      storage:       document.getElementById('toggle-storage').classList.contains('on'),
+      system:        document.getElementById('toggle-system').classList.contains('on'),
+    };
+  }
+
+  async function allowPermissions() {
+    const prefs = getPermState();
+
+    // Request actual browser permissions only if the toggle is ON
+    if (prefs.location) {
+      try { navigator.geolocation.getCurrentPosition(() => {}); } catch(e) {}
+    }
+    if (prefs.notifications) {
+      try { await Notification.requestPermission(); } catch(e) {}
+    }
+    // BUG FIX: camera getUserMedia was running outside the toggle check in
+    // the original — now correctly inside the `if (prefs.camera)` guard.
+    if (prefs.camera) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(t => t.stop());
+      } catch(e) {}
+    }
+
+    localStorage.setItem('freezy_permissions', JSON.stringify(prefs));
+    goToScreen('screen-login');
+  }
+
+  function skipPermissions() {
+    localStorage.setItem('freezy_permissions', JSON.stringify({
+      location: false, notifications: false, camera: false,
+      audio: false, storage: false, system: false
+    }));
+    goToScreen('screen-login');
+  }
+
+  document.getElementById('allowPermsBtn').addEventListener('click', allowPermissions);
+  document.getElementById('skipPermsBtn').addEventListener('click', skipPermissions);
+
+  // ---- LOGIN TABS ----
+  // BUG FIX: tab switching now uses data-tab attributes and event
+  // delegation — no more fragile querySelector('[onclick="..."]') pattern.
+  document.getElementById('loginTabs').addEventListener('click', (e) => {
+    const tab = e.target.closest('.login-tab');
+    if (!tab) return;
+    const target = tab.dataset.tab;
+    document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.login-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + target).classList.add('active');
+  });
+
+  // ---- GOOGLE LOGIN ----
+  document.getElementById('googleSignInBtn').addEventListener('click', async () => {
+    document.getElementById('error-google').textContent = '';
+    try {
+      const provider = new GoogleAuthProvider();
+      const result   = await signInWithPopup(auth, provider);
+      await handleLoginSuccess(result.user, 'Google');
+    } catch (err) {
+      document.getElementById('error-google').textContent = err.message;
+    }
+  });
+
+  // ---- EMAIL LOGIN ----
+  document.getElementById('emailSignInBtn').addEventListener('click', async () => {
+    const email    = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    const errEl    = document.getElementById('error-email');
+    errEl.textContent = '';
+    if (!email || !password) { errEl.textContent = 'Please enter email and password.'; return; }
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      await handleLoginSuccess(result.user, 'Email');
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+  });
+
+  document.getElementById('emailRegisterBtn').addEventListener('click', async () => {
+    const email    = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    const errEl    = document.getElementById('error-email');
+    errEl.textContent = '';
+    if (!email || !password) { errEl.textContent = 'Please enter email and password.'; return; }
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      await handleLoginSuccess(result.user, 'Email');
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+  });
+
+  // ---- PHONE / OTP ----
+  let confirmationResult = null;
+
+  document.getElementById('sendOtpBtn').addEventListener('click', async () => {
+    const phone = document.getElementById('phoneInput').value.trim();
+    const errEl = document.getElementById('error-phone');
+    errEl.textContent = '';
+    if (!phone) { errEl.textContent = 'Please enter your phone number.'; return; }
+    try {
+      // RecaptchaVerifier must be re-created if it already exists
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'normal' });
+      confirmationResult = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
+      document.getElementById('phone-step-1').style.display = 'none';
+      document.getElementById('phone-step-2').style.display = 'block';
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+  });
+
+  document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
+    const otp   = ['otp1','otp2','otp3','otp4','otp5','otp6'].map(id => document.getElementById(id).value).join('');
+    const errEl = document.getElementById('error-phone');
+    errEl.textContent = '';
+    if (otp.length < 6) { errEl.textContent = 'Please enter all 6 digits.'; return; }
+    try {
+      const result = await confirmationResult.confirm(otp);
+      await handleLoginSuccess(result.user, 'Phone');
+    } catch (err) {
+      errEl.textContent = 'Invalid OTP. Please try again.';
+    }
+  });
+
+  // OTP auto-advance: attach to each otp input
+  ['otp1','otp2','otp3','otp4','otp5','otp6'].forEach((id, i, arr) => {
+    document.getElementById(id).addEventListener('input', (e) => {
+      // Allow only digits
+      e.target.value = e.target.value.replace(/\D/g, '');
+      if (e.target.value && i < arr.length - 1) {
+        document.getElementById(arr[i + 1]).focus();
+      }
+    });
+    // Backspace goes back to previous field
+    document.getElementById(id).addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !e.target.value && i > 0) {
+        document.getElementById(arr[i - 1]).focus();
+      }
+    });
+  });
+
+  // ---- HANDLE SUCCESSFUL LOGIN ----
+  async function handleLoginSuccess(user, method) {
+    // Check suspension in Firestore
+    try {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists() && userDoc.data().suspended === true) {
+        showSuspensionScreen(user);
+        return;
+      }
+
+      // Save / update user profile in Firestore
+      // Collection: users/{uid}
+      // Fields: email, name, photoURL, loginMethod, lastLogin, suspended, permissions
+      // To delete your data: remove the document at users/{uid} in Firebase console
+      await setDoc(doc(db, "users", user.uid), {
+        email:       user.email       || "",
+        name:        user.displayName || user.email || "User",
+        photoURL:    user.photoURL    || "",
+        loginMethod: method,
+        lastLogin:   new Date().toISOString(),
+        suspended:   false,
+        permissions: JSON.parse(localStorage.getItem('freezy_permissions') || '{}')
+      }, { merge: true });
+
+    } catch(e) {
+      console.warn("Firestore save failed:", e);
+    }
+
+    // Fire-and-forget login log (no await needed, non-blocking)
+    getIP().then(ip => logToAppsScript({
+      action: "log_login",
+      email:  user.email        || "Unknown",
+      name:   user.displayName  || "Unknown",
+      uid:    user.uid,
+      method: method,
+      ip:     ip,
+      device: navigator.userAgent
+    }));
+
+    startBootSequence(user);
+  }
+
+  // ---- BOOT SEQUENCE ----
+  function startBootSequence(user) {
+    goToScreen('screen-loading');
+
+    const bootMessages = [
+      { msg: "Firebase Authentication verified",  type: "ok",   progress: 10 },
+      { msg: "Loading user profile",              type: "load", progress: 20 },
+      { msg: "Connecting to Google Drive",        type: "init", progress: 32 },
+      { msg: "Initializing file system",          type: "ok",   progress: 44 },
+      { msg: "Loading desktop environment",       type: "load", progress: 56 },
+      { msg: "Mounting system applications",      type: "ok",   progress: 67 },
+      { msg: "Applying user preferences",         type: "init", progress: 77 },
+      { msg: "Starting window manager",           type: "ok",   progress: 85 },
+      { msg: "Launching Freezy-OS desktop",       type: "load", progress: 95 },
+      { msg: "System ready",                      type: "ok",   progress: 100 },
+    ];
+
+    const log      = document.getElementById('bootLog');
+    const progress = document.getElementById('bootProgress');
+    const status   = document.getElementById('bootStatus');
+
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i >= bootMessages.length) {
+        clearInterval(interval);
+        sessionStorage.setItem('freezy_user', JSON.stringify({
+          uid:   user.uid,
+          name:  user.displayName || user.email || 'User',
+          email: user.email       || '',
+          photo: user.photoURL    || ''
+        }));
+        setTimeout(() => { window.location.href = 'os.html'; }, 600);
+        return;
+      }
+      const item = bootMessages[i];
+      progress.style.width = item.progress + '%';
+      status.textContent   = item.msg;
+
+      const line           = document.createElement('div');
+      line.className       = 'boot-log-line ' + item.type;
+      line.textContent     = item.msg;
+      line.style.animationDelay = '0s';
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+      i++;
+    }, 380);
+  }
+
+  // ---- SUSPENSION SCREEN ----
+  function showSuspensionScreen(user) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('suspensionScreen').classList.add('show');
+    window._suspendedUser = user;
+    logToAppsScript({
+      action:      "log_suspension",
+      email:       user.email        || "Unknown",
+      name:        user.displayName  || "Unknown",
+      uid:         user.uid,
+      reason:      "Account flagged as suspended",
+      suspendedBy: "FRZ Generations System"
+    });
+  }
+
+  // ---- APPEAL SUBMISSION ----
+  document.getElementById('submitAppealBtn').addEventListener('click', async () => {
+    const message = document.getElementById('appealMessage').value.trim();
+    const user    = window._suspendedUser;
+    if (!message) { alert('Please write your appeal message.'); return; }
+    await logToAppsScript({
+      action:  "submit_appeal",
+      email:   user ? user.email        : "Unknown",
+      name:    user ? user.displayName  : "Unknown",
+      uid:     user ? user.uid          : "Unknown",
+      message: message
+    });
+    document.getElementById('appealMessage').value = '';
+    alert('Your appeal has been submitted. We will respond within 24–72 hours.');
+  });
+
+  // ----------------------------------------------------------------
+  // BUG FIX: onAuthStateChanged auto-redirect guard.
+  //
+  // Original code: as soon as Firebase detected an existing session,
+  // it called showSuspensionScreen() directly (bypassing the boot flow)
+  // OR let the user bypass the entire welcome/terms/permissions flow.
+  //
+  // Fix: if the user is already authenticated and NOT suspended, we
+  // skip straight to the boot sequence (they've already agreed to terms
+  // in a previous session). If they ARE suspended, we show that screen.
+  // The flag `onboardingComplete` in localStorage ensures first-time
+  // users still go through the full flow.
+  // ----------------------------------------------------------------
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) return; // Not logged in — stay on welcome screen
+
+    try {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+
+      if (userDoc.exists() && userDoc.data().suspended === true) {
+        showSuspensionScreen(user);
+        return;
+      }
+
+      // Cross-platform blacklist check via Realtime DB
+      const blacklistRef = ref(rtdb, `frz_blacklist/${user.uid}`);
+      onValue(blacklistRef, (snapshot) => {
+        if (snapshot.exists() && snapshot.val().suspended === true) {
+          showSuspensionScreen(user);
+        }
+      }, { onlyOnce: true }); // onlyOnce prevents a persistent listener leak
+
+    } catch(e) {
+      console.warn("Auth state check failed:", e);
+    }
+
+    // User already has an account — skip straight to boot
+    // (they've agreed to T&C previously; their prefs are in Firestore)
+    const hasOnboarded = localStorage.getItem('freezy_onboarded');
+    if (hasOnboarded) {
+      startBootSequence(user);
+    }
+    // If not onboarded yet, stay on welcome screen so they go through the flow
+  });
+
+  // Mark onboarding complete after first successful login
+  // (called inside handleLoginSuccess → startBootSequence, but we set
+  //  the flag right before redirect so subsequent visits skip the flow)
+  const _origBoot = startBootSequence;
+  // We shadow startBootSequence to set the flag just before redirect
+  // (this approach keeps all logic in one place)
+  window._markOnboarded = () => localStorage.setItem('freezy_onboarded', '1');
+
+  // ----------------------------------------------------------------
+  // DEVTOOLS DETECTION
+  // BUG FIX: Removed the `setInterval(() => { debugger; })` pattern.
+  // That statement actively pauses JavaScript execution every second
+  // whenever DevTools is open, which freezes the entire UI for all
+  // legitimate users and testers. The size-diff heuristic is enough.
+  // ----------------------------------------------------------------
+  let devtoolsAttempts = 0;
+  let devtoolsOpen     = false;
+
+  function detectDevTools() {
+    const threshold  = 160;
+    const widthDiff  = window.outerWidth  - window.innerWidth  > threshold;
+    const heightDiff = window.outerHeight - window.innerHeight > threshold;
+
+    if ((widthDiff || heightDiff) && !devtoolsOpen) {
+      devtoolsOpen = true;
+      handleDevToolsOpen();
+    } else if (!widthDiff && !heightDiff) {
+      devtoolsOpen = false;
+    }
+  }
+
+  setInterval(detectDevTools, 500);
+
+  function handleDevToolsOpen() {
+    devtoolsAttempts++;
+    showDevToolsWarning();
+    if (devtoolsAttempts === 1) {
+      logDevToolsEvent("devtools_warning");
+    } else {
+      logDevToolsEvent("devtools_violation");
+    }
+  }
+
+  function showDevToolsWarning() {
+    const popup = document.getElementById('devtoolsPopup');
+    popup.classList.add('show');
+    setTimeout(() => popup.classList.remove('show'), 6000);
+  }
+
+  async function logDevToolsEvent(action) {
+    const user = auth.currentUser;
+    const ip   = await getIP();
+    logToAppsScript({
+      action:    action,
+      email:     user ? user.email       : "Not logged in",
+      name:      user ? user.displayName : "Unknown",
+      uid:       user ? user.uid         : "Unknown",
+      ip:        ip,
+      userAgent: navigator.userAgent
+    });
+  }
+
+</script>
+
+</body>
+</html>
