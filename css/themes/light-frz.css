@@ -1,0 +1,482 @@
+/* ============================================================
+   FRZOS — themes/light-frz.css
+   FRZ LIGHT VARIANT — OPTIONAL THEME
+   NOT default. Switch via Settings.
+   Applied via: <body class="theme-light-frz">
+   ============================================================ */
+
+/* ===================== THEME VARIABLE OVERRIDES ===================== */
+
+body.theme-light-frz {
+  /* --- Light background palette --- */
+  --bg:              #f0f4f8;
+  --bg-secondary:    #e4ecf4;
+  --bg-card:         #ffffff;
+  --bg-glass:        rgba(240, 244, 248, 0.88);
+
+  /* --- Text colors --- */
+  --text-primary:    #1a2a3a;
+  --text-secondary:  #4a6a8a;
+  --text-muted:      #8aacca;
+
+  /* --- Borders --- */
+  --border:          rgba(0, 102, 255, 0.15);
+  --border-hover:    rgba(0, 102, 255, 0.35);
+  --border-active:   rgba(0, 102, 255, 0.55);
+
+  /* --- FRZ brand accents — kept from dark theme --- */
+  --accent-cyan:     #0099cc;
+  --accent-blue:     #0055dd;
+  --accent-purple:   #6a1fe0;
+  --accent-green:    #00aa5e;
+  --accent-yellow:   #cc9900;
+  --accent-red:      #dd1133;
+
+  /* --- Glow — softer on light theme --- */
+  --glow-cyan:       0 0 14px rgba(0, 153, 204, 0.3);
+  --glow-sm:         0 0 8px rgba(0, 153, 204, 0.2);
+  --glow-lg:         0 0 28px rgba(0, 153, 204, 0.22);
+
+  /* --- Danger / success aliases --- */
+  --danger:          #dd1133;
+  --success:         #00aa5e;
+}
+
+/* ===================== BACKGROUND ===================== */
+
+body.theme-light-frz #desktop {
+  background-color: #f0f4f8;
+  background-image:
+    linear-gradient(rgba(0, 102, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 102, 255, 0.05) 1px, transparent 1px);
+}
+
+body.theme-light-frz #desktop::before {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 50%,
+    rgba(0, 102, 255, 0.05) 0%,
+    transparent 70%
+  );
+}
+
+/* Orbs — lighter, bluish */
+body.theme-light-frz .desktop-orb {
+  opacity: 0.1;
+}
+
+body.theme-light-frz .desktop-orb:nth-child(1) {
+  background: radial-gradient(circle, #0099cc, transparent 70%);
+}
+
+body.theme-light-frz .desktop-orb:nth-child(2) {
+  background: radial-gradient(circle, #6a1fe0, transparent 70%);
+}
+
+body.theme-light-frz .desktop-orb:nth-child(3) {
+  background: radial-gradient(circle, #0055dd, transparent 70%);
+}
+
+/* ===================== TASKBAR ===================== */
+
+body.theme-light-frz #taskbar {
+  background: rgba(240, 244, 248, 0.95);
+  border-bottom: 1px solid rgba(0, 102, 255, 0.2);
+  box-shadow:
+    0 2px 16px rgba(0, 0, 0, 0.1),
+    0 1px 0 rgba(0, 102, 255, 0.08);
+}
+
+body.theme-light-frz #taskbar-logo-text {
+  color: var(--accent-blue);
+  text-shadow: none;
+}
+
+body.theme-light-frz #clock-time {
+  color: var(--text-primary);
+}
+
+body.theme-light-frz #clock-date {
+  color: var(--text-secondary);
+}
+
+body.theme-light-frz .taskbar-btn {
+  color: var(--text-secondary);
+}
+
+body.theme-light-frz .taskbar-btn:hover {
+  color: var(--accent-blue);
+  background: rgba(0, 102, 255, 0.08);
+  box-shadow: 0 0 8px rgba(0, 85, 221, 0.2);
+}
+
+body.theme-light-frz #taskbar-avatar {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 8px rgba(0, 85, 221, 0.25);
+}
+
+/* ===================== DOCK ===================== */
+
+body.theme-light-frz #dock {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 102, 255, 0.18);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.14),
+    0 0 0 1px rgba(0, 102, 255, 0.06);
+}
+
+body.theme-light-frz .dock-item:hover {
+  background: rgba(0, 85, 221, 0.08);
+  filter: drop-shadow(0 0 8px rgba(0, 85, 221, 0.4));
+}
+
+body.theme-light-frz .dock-item::after {
+  background: var(--accent-blue);
+  box-shadow: 0 0 5px var(--accent-blue);
+}
+
+body.theme-light-frz .dock-item .dock-tooltip {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 102, 255, 0.2);
+  color: var(--text-primary);
+}
+
+body.theme-light-frz #dock-add-btn {
+  border-color: rgba(0, 102, 255, 0.3);
+  color: var(--text-muted);
+}
+
+body.theme-light-frz #dock-add-btn:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  background: rgba(0, 85, 221, 0.08);
+}
+
+/* ===================== DESKTOP ICONS ===================== */
+
+body.theme-light-frz .desktop-icon:hover {
+  background: rgba(0, 102, 255, 0.1);
+}
+
+body.theme-light-frz .desktop-icon.selected {
+  background: rgba(0, 85, 221, 0.14);
+  outline: 1px solid rgba(0, 85, 221, 0.4);
+}
+
+body.theme-light-frz .desktop-icon-label {
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.8), 0 0 6px rgba(255, 255, 255, 0.5);
+  color: #1a2a3a;
+}
+
+/* ===================== WINDOWS ===================== */
+
+body.theme-light-frz .window {
+  background: #ffffff;
+  border-color: rgba(0, 102, 255, 0.18);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 102, 255, 0.05);
+}
+
+body.theme-light-frz .window.active {
+  border-color: rgba(0, 102, 255, 0.4);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(0, 102, 255, 0.1),
+    0 0 24px rgba(0, 102, 255, 0.1);
+}
+
+body.theme-light-frz .window.inactive {
+  border-color: rgba(0, 102, 255, 0.1);
+}
+
+body.theme-light-frz .window-titlebar {
+  background: rgba(240, 244, 248, 0.9);
+  border-bottom-color: rgba(0, 102, 255, 0.12);
+}
+
+body.theme-light-frz .window-titlebar-title {
+  color: var(--text-secondary);
+}
+
+body.theme-light-frz .window.active .window-titlebar-title {
+  color: var(--text-primary);
+}
+
+body.theme-light-frz .window-resize::before,
+body.theme-light-frz .window-resize::after {
+  background: rgba(0, 102, 255, 0.3);
+}
+
+body.theme-light-frz .window-resize:hover::before,
+body.theme-light-frz .window-resize:hover::after {
+  background: var(--accent-blue);
+}
+
+/* ===================== APP COMPONENTS ===================== */
+
+body.theme-light-frz .app-content {
+  color: var(--text-primary);
+}
+
+body.theme-light-frz .app-input {
+  background: #f4f7fb;
+  border-color: rgba(0, 102, 255, 0.2);
+  color: var(--text-primary);
+}
+
+body.theme-light-frz .app-input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 8px rgba(0, 85, 221, 0.18);
+}
+
+body.theme-light-frz .app-input::placeholder {
+  color: var(--text-muted);
+}
+
+body.theme-light-frz .tab {
+  color: var(--text-muted);
+}
+
+body.theme-light-frz .tab.active {
+  color: var(--accent-blue);
+  border-bottom-color: var(--accent-blue);
+}
+
+body.theme-light-frz .toggle.on {
+  background: var(--accent-blue);
+  box-shadow: 0 0 6px rgba(0, 85, 221, 0.35);
+}
+
+/* Calculator */
+body.theme-light-frz .calc-display {
+  background: #f0f4f8;
+  border-bottom-color: rgba(0, 102, 255, 0.12);
+}
+
+body.theme-light-frz .calc-result {
+  color: var(--accent-blue);
+}
+
+body.theme-light-frz .calc-btn {
+  background: #ffffff;
+  color: var(--text-primary);
+}
+
+body.theme-light-frz .calc-btn:hover  { background: rgba(0, 85, 221, 0.06); }
+body.theme-light-frz .calc-btn:active { background: rgba(0, 85, 221, 0.14); }
+body.theme-light-frz .calc-btn.op     { color: var(--accent-blue); }
+body.theme-light-frz .calc-btn.fn     { color: var(--accent-purple); }
+
+/* Code editor */
+body.theme-light-frz .code-editor-area {
+  background: #1a1a2e;
+  color: #00ff88;
+}
+
+body.theme-light-frz .code-output {
+  background: #12121e;
+  color: #7a9ab5;
+}
+
+/* Weather */
+body.theme-light-frz .weather-main,
+body.theme-light-frz .weather-detail-card,
+body.theme-light-frz .weather-forecast-card {
+  background: rgba(240, 244, 248, 0.8);
+  border-color: rgba(0, 102, 255, 0.15);
+}
+
+body.theme-light-frz .weather-temp {
+  color: var(--accent-blue);
+}
+
+/* Prayer */
+body.theme-light-frz .prayer-countdown {
+  background: rgba(240, 244, 248, 0.8);
+  border-color: rgba(0, 102, 255, 0.25);
+}
+
+body.theme-light-frz .prayer-countdown-timer {
+  color: var(--accent-blue);
+  text-shadow: none;
+}
+
+body.theme-light-frz .prayer-card {
+  background: rgba(240, 244, 248, 0.6);
+  border-color: rgba(0, 102, 255, 0.12);
+}
+
+body.theme-light-frz .prayer-card.next {
+  border-color: var(--accent-blue);
+  background: rgba(0, 85, 221, 0.05);
+}
+
+/* Settings */
+body.theme-light-frz .settings-nav {
+  border-right-color: rgba(0, 102, 255, 0.12);
+}
+
+body.theme-light-frz .settings-nav-item {
+  color: var(--text-secondary);
+}
+
+body.theme-light-frz .settings-nav-item:hover {
+  background: rgba(0, 85, 221, 0.06);
+  color: var(--text-primary);
+}
+
+body.theme-light-frz .settings-nav-item.active {
+  background: rgba(0, 85, 221, 0.08);
+  color: var(--accent-blue);
+  border-left-color: var(--accent-blue);
+}
+
+body.theme-light-frz .settings-row {
+  border-bottom-color: rgba(0, 102, 255, 0.1);
+}
+
+/* File manager */
+body.theme-light-frz .files-sidebar {
+  border-right-color: rgba(0, 102, 255, 0.12);
+}
+
+body.theme-light-frz .files-sidebar-item.active {
+  background: rgba(0, 85, 221, 0.08);
+  color: var(--accent-blue);
+  border-left-color: var(--accent-blue);
+}
+
+body.theme-light-frz .file-item:hover    { background: rgba(0, 85, 221, 0.08); }
+body.theme-light-frz .file-item.selected { background: rgba(0, 85, 221, 0.14); outline-color: rgba(0, 85, 221, 0.4); }
+
+/* Context menu */
+body.theme-light-frz #context-menu {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(0, 102, 255, 0.2);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
+}
+
+body.theme-light-frz .context-menu-item {
+  color: var(--text-secondary);
+}
+
+body.theme-light-frz .context-menu-item:hover {
+  background: rgba(0, 85, 221, 0.08);
+  color: var(--text-primary);
+}
+
+body.theme-light-frz .context-menu-divider {
+  background: rgba(0, 102, 255, 0.1);
+}
+
+/* Notifications */
+body.theme-light-frz .notification {
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+body.theme-light-frz .notification-title {
+  color: var(--text-primary);
+}
+
+body.theme-light-frz .notification-message {
+  color: var(--text-secondary);
+}
+
+/* Lock screen */
+body.theme-light-frz #lock-screen {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 80%, rgba(0, 85, 221, 0.08), transparent),
+    rgba(240, 244, 248, 0.97);
+}
+
+body.theme-light-frz #lock-time {
+  color: var(--text-primary);
+  text-shadow: none;
+}
+
+body.theme-light-frz #lock-date,
+body.theme-light-frz #lock-username {
+  color: var(--text-secondary);
+}
+
+body.theme-light-frz #lock-avatar {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 12px rgba(0, 85, 221, 0.3);
+}
+
+body.theme-light-frz #lock-password {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 102, 255, 0.25);
+  color: var(--text-primary);
+}
+
+body.theme-light-frz #lock-password:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 8px rgba(0, 85, 221, 0.2);
+}
+
+/* App drawer */
+body.theme-light-frz #app-drawer {
+  background: rgba(240, 244, 248, 0.97);
+}
+
+body.theme-light-frz .drawer-category {
+  color: var(--accent-blue);
+  border-left-color: var(--accent-blue);
+}
+
+body.theme-light-frz .drawer-item:hover {
+  background: rgba(0, 85, 221, 0.08);
+}
+
+body.theme-light-frz .drawer-item-label {
+  color: var(--text-secondary);
+}
+
+body.theme-light-frz #drawer-search {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 102, 255, 0.25);
+  color: var(--text-primary);
+}
+
+body.theme-light-frz #drawer-search:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 8px rgba(0, 85, 221, 0.18);
+}
+
+/* ===================== SELECTION COLOR ===================== */
+
+body.theme-light-frz ::selection {
+  background: rgba(0, 102, 255, 0.2);
+  color: #1a2a3a;
+}
+
+body.theme-light-frz ::-moz-selection {
+  background: rgba(0, 102, 255, 0.2);
+  color: #1a2a3a;
+}
+
+/* ===================== SCROLLBARS ===================== */
+
+body.theme-light-frz ::-webkit-scrollbar-track {
+  background: rgba(228, 236, 244, 0.5);
+}
+
+body.theme-light-frz ::-webkit-scrollbar-thumb {
+  background: rgba(0, 102, 255, 0.3);
+}
+
+body.theme-light-frz ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 102, 255, 0.55);
+}
+
+body.theme-light-frz {
+  scrollbar-color: rgba(0, 102, 255, 0.3) transparent;
+}
+
+/* ===================== APP LABEL ===================== */
+
+body.theme-light-frz .app-label {
+  color: var(--accent-blue);
+}

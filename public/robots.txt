@@ -1,0 +1,26 @@
+# ============================================================
+# FREEZY-OS ROBOTS.TXT
+# FRZ Generations © 2026
+# ============================================================
+
+User-agent: *
+
+# Allow indexing of the landing/login page
+Allow: /index.html
+Allow: /terms.html
+
+# Do NOT index the OS desktop — it requires login anyway
+Disallow: /os.html
+
+# Do NOT index internal JS, CSS, config files
+Disallow: /js/
+Disallow: /css/
+Disallow: /firebase/
+Disallow: /electron/
+Disallow: /apps/
+
+# Allow assets (icons, wallpapers) for image search
+Allow: /assets/
+
+# Sitemap location
+Sitemap: https://YOUR-FREEZY-OS-DOMAIN.netlify.app/sitemap.xml

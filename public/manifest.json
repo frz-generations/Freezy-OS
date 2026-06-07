@@ -1,0 +1,52 @@
+{
+  "name": "Freezy-OS — FRZ Generations",
+  "short_name": "Freezy-OS",
+  "description": "A fully browser-based desktop operating system by FRZ Generations. Free Tools. Unlimited Possibilities.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "landscape-primary",
+  "background_color": "#020408",
+  "theme_color": "#00d4ff",
+  "categories": ["productivity", "utilities", "education"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "assets/icons/apps/freezy-os.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/apps/freezy-os.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "assets/wallpapers/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "Freezy-OS Desktop"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Freezy-OS",
+      "short_name": "Freezy-OS",
+      "description": "Launch Freezy-OS desktop",
+      "url": "/os.html",
+      "icons": [
+        {
+          "src": "assets/icons/apps/freezy-os.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

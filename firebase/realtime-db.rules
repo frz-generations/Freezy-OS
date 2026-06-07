@@ -1,0 +1,32 @@
+{
+  "rules": {
+
+    "qr_sessions": {
+      "$code": {
+
+        ".read": "auth != null",
+
+        ".write": "auth != null",
+
+        ".validate": "newData.hasChildren(['uid', 'expires']) && newData.child('uid').isString() && newData.child('expires').isNumber() && newData.child('expires').val() > now",
+
+        "connected": {
+          ".write": "auth != null && data.parent().child('uid').val() != auth.uid"
+        }
+      }
+    },
+
+    "frz_blacklist": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+
+        ".write": false
+      }
+    },
+
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

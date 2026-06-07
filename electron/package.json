@@ -1,0 +1,82 @@
+{
+  "name": "freezy-os",
+  "version": "1.0.0",
+  "description": "Freezy-OS by FRZ Generations — Free Tools. Unlimited Possibilities.",
+  "main": "electron/main.js",
+  "author": {
+    "name": "FRZ Generations",
+    "email": "frzgenerations@gmail.com",
+    "url": "https://frz-generations.netlify.app"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "homepage": "https://frz-generations.netlify.app",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --win --mac --linux"
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.frzgenerations.freezyos",
+    "productName": "Freezy-OS",
+    "copyright": "Copyright © 2026 FRZ Generations",
+    "icon": "assets/icons/apps/freezy-os",
+    "files": [
+      "**/*",
+      "!node_modules/**",
+      "!electron/node_modules/**",
+      "!**/*.map",
+      "!.env",
+      "!.gitignore",
+      "!README.md"
+    ],
+    "extraResources": [
+      {
+        "from": "assets/",
+        "to": "assets/",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icons/apps/freezy-os.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Freezy-OS"
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "icon": "assets/icons/apps/freezy-os.icns",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "assets/icons/apps/freezy-os.png",
+      "category": "Office"
+    },
+    "directories": {
+      "output": "dist-electron",
+      "buildResources": "assets"
+    }
+  }
+}

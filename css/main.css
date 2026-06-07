@@ -1,0 +1,355 @@
+/* ============================================================
+   FRZOS — main.css
+   Global reset, CSS variables, scrollbars, utilities, animations
+   ============================================================ */
+
+/* ===================== CSS VARIABLES ===================== */
+:root {
+  /* --- Colors --- */
+  --bg:              #020408;
+  --bg-secondary:    #080d14;
+  --bg-card:         #0d1520;
+  --bg-glass:        rgba(13, 21, 32, 0.85);
+  --accent-cyan:     #00d4ff;
+  --accent-blue:     #0066ff;
+  --accent-purple:   #7b2fff;
+  --accent-green:    #00ff88;
+  --accent-yellow:   #ffcc00;
+  --accent-red:      #ff3355;
+  --text-primary:    #e8f4fd;
+  --text-secondary:  #7a9ab5;
+  --text-muted:      #3d5a73;
+  --border:          rgba(0, 212, 255, 0.15);
+  --border-hover:    rgba(0, 212, 255, 0.4);
+  --border-active:   rgba(0, 212, 255, 0.6);
+  --glow-cyan:       0 0 20px rgba(0, 212, 255, 0.4);
+  --glow-sm:         0 0 10px rgba(0, 212, 255, 0.25);
+  --glow-lg:         0 0 40px rgba(0, 212, 255, 0.3);
+  --danger:          #ff3355;
+  --success:         #00ff88;
+
+  /* --- Typography --- */
+  --font-display: 'Orbitron', monospace;
+  --font-body:    'Rajdhani', sans-serif;
+  --font-mono:    'Share Tech Mono', monospace;
+  --font-size-base: 14px;
+
+  /* --- Layout --- */
+  --taskbar-h:  48px;
+  --dock-h:     72px;
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+
+  /* --- Transitions --- */
+  --transition-fast:   0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow:   0.4s ease;
+}
+
+/* ===================== RESPONSIVE VARIABLE OVERRIDES ===================== */
+
+/* Mobile — up to 768px */
+@media (max-width: 768px) {
+  :root {
+    --taskbar-h:      44px;
+    --dock-h:         60px;
+    --font-size-base: 13px;
+  }
+}
+
+/* Tablet — 769px to 1199px */
+@media (min-width: 769px) and (max-width: 1199px) {
+  :root {
+    --taskbar-h:      50px;
+    --dock-h:         68px;
+    --font-size-base: 14px;
+  }
+}
+
+/* TV / Large display — 1920px and above */
+@media (min-width: 1920px) {
+  :root {
+    --taskbar-h:      56px;
+    --dock-h:         88px;
+    --font-size-base: 16px;
+  }
+}
+
+/* 4K — 3840px and above */
+@media (min-width: 3840px) {
+  :root {
+    --taskbar-h:      72px;
+    --dock-h:         110px;
+    --font-size-base: 20px;
+    --radius-sm:      8px;
+    --radius-md:      14px;
+    --radius-lg:      22px;
+  }
+}
+
+/* ===================== GLOBAL RESET ===================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-size: var(--font-size-base);
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  background: var(--bg);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Allow text selection inside inputs and editable areas */
+input,
+textarea,
+[contenteditable="true"],
+[contenteditable=""] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Remove default list styles */
+ul,
+ol {
+  list-style: none;
+}
+
+/* Remove default button styles */
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+}
+
+/* Remove default anchor styles */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Images responsive by default */
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* ===================== CUSTOM SCROLLBARS ===================== */
+
+/* Webkit — Chrome, Safari, Edge */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.35);
+  border-radius: 99px;
+  transition: background var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.65);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 212, 255, 0.35) transparent;
+}
+
+/* ===================== UTILITY CLASSES ===================== */
+
+/* Visibility */
+.hidden    { display: none !important; }
+.invisible { opacity: 0; pointer-events: none; }
+
+/* Display / Flex */
+.flex         { display: flex; }
+.flex-center  { display: flex; align-items: center; justify-content: center; }
+.flex-col     { display: flex; flex-direction: column; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.flex-wrap    { flex-wrap: wrap; }
+.flex-1       { flex: 1; }
+
+/* Gaps */
+.gap-xs  { gap: 4px; }
+.gap-sm  { gap: 8px; }
+.gap-md  { gap: 16px; }
+.gap-lg  { gap: 24px; }
+
+/* Text color helpers */
+.text-cyan    { color: var(--accent-cyan); }
+.text-blue    { color: var(--accent-blue); }
+.text-purple  { color: var(--accent-purple); }
+.text-green   { color: var(--accent-green); }
+.text-yellow  { color: var(--accent-yellow); }
+.text-red     { color: var(--accent-red); }
+.text-muted   { color: var(--text-muted); }
+.text-secondary { color: var(--text-secondary); }
+
+/* Font families */
+.font-mono    { font-family: var(--font-mono); }
+.font-display { font-family: var(--font-display); }
+.font-body    { font-family: var(--font-body); }
+
+/* Overflow */
+.overflow-hidden { overflow: hidden; }
+.overflow-auto   { overflow: auto; }
+.overflow-scroll { overflow: scroll; }
+
+/* Pointer */
+.pointer        { cursor: pointer; }
+.no-pointer     { pointer-events: none; }
+
+/* Animations */
+.spin           { animation: spin 0.6s linear infinite; }
+.fade-up        { animation: fadeUp var(--transition-normal) ease forwards; }
+.fade-in        { animation: fadeIn var(--transition-normal) ease forwards; }
+.pop-in         { animation: popIn var(--transition-normal) ease forwards; }
+.pulse          { animation: pulse 2s ease infinite; }
+
+/* Glow helpers */
+.glow-cyan { box-shadow: var(--glow-cyan); }
+.glow-sm   { box-shadow: var(--glow-sm); }
+.glow-lg   { box-shadow: var(--glow-lg); }
+
+/* Borders */
+.border         { border: 1px solid var(--border); }
+.border-cyan    { border: 1px solid var(--accent-cyan); }
+.border-radius-sm { border-radius: var(--radius-sm); }
+.border-radius-md { border-radius: var(--radius-md); }
+.border-radius-lg { border-radius: var(--radius-lg); }
+.rounded-full   { border-radius: 999px; }
+
+/* Background */
+.bg-card   { background: var(--bg-card); }
+.bg-glass  { background: var(--bg-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+
+/* Sizing */
+.w-full  { width: 100%; }
+.h-full  { height: 100%; }
+.w-fit   { width: fit-content; }
+
+/* Truncate */
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===================== GLOBAL KEYFRAME ANIMATIONS ===================== */
+
+/* Rotation — used for loaders */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Fade + slide up — general entrance */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Simple fade */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Scale pop — dropdowns, menus */
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Slide in from right */
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/* Slide out to right */
+@keyframes slideOutRight {
+  to { transform: translateX(100%); opacity: 0; }
+}
+
+/* Opacity pulse — indicators */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+/* Floating orb movement — desktop background */
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(20px, -20px) scale(1.05); }
+}
+
+/* Background grid drift animation */
+@keyframes gridDrift {
+  0%   { background-position: 0 0; }
+  100% { background-position: 40px 40px; }
+}
+
+/* Window open */
+@keyframes winOpen {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Window close */
+@keyframes winClose {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.94); }
+}
+
+/* Notification slide in */
+@keyframes notifIn {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Notification slide out */
+@keyframes notifOut {
+  to { opacity: 0; transform: translateX(100%); }
+}
+
+/* Boot logo pulse */
+@keyframes bootPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.4));
+  }
+  50% {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 40px rgba(0, 212, 255, 0.8));
+  }
+}
+
+/* Shimmer — skeleton loading */
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position:  200% 0; }
+}

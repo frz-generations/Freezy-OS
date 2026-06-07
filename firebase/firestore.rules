@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================================
+    // users/{uid} — User profiles and OS settings
+    // - Users can only read/write their OWN document
+    // - Users cannot read other users' documents
+    // - Users cannot change their own 'suspended' field
+    //   (only admin via Firebase Console can set suspended: true)
+    // - New documents must have required fields
+    // ============================================================
+    match /users/{uid} {
+
+      // Allow read only if authenticated AND reading own document
+      allow read: if request.auth != null
+                  && request.auth.uid == uid;
+
+      // Allow create — new user first login
+      // Must be authenticated, writing own document
+      // Must include required fields
+      allow create: if request.auth != null
+                    && request.auth.uid == uid
+                    && request.resource.data.keys().hasAll(['email', 'name', 'lastLogin'])
+                    && request.resource.data.suspended == false;
+
+      // Allow update — saving settings, updating lastLogin
+      // Cannot change suspended field (only admin can)
+      allow update: if request.auth != null
+                    && request.auth.uid == uid
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['suspended']);
+
+      // Deny delete — users cannot delete their own account from client
+      // Deletion done via admin Firebase Console or server-side function
+      allow delete: if false;
+    }
+
+    // ============================================================
+    // All other collections — deny by default
+    // frz_blacklist is in Realtime Database not Firestore
+    // No other collections should exist in this project
+    // ============================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

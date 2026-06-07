@@ -1,0 +1,1074 @@
+/* ============================================================
+   FRZOS — desktop.css
+   Desktop background, taskbar, dock, icons, app drawer,
+   context menu, notifications, lock screen, suspension screen
+   ============================================================ */
+
+/* ===================== Z-INDEX REFERENCE =====================
+   Desktop background:     z-index: 0
+   Wallpaper layer:        z-index: 1
+   Desktop icons:          z-index: 2
+   Windows:                z-index: 100+
+   Taskbar + Dock:         z-index: 1000
+   App Drawer:             z-index: 2000
+   Popups / Dropdowns:     z-index: 3000
+   Context Menu:           z-index: 4000
+   Notifications:          z-index: 5000
+   Brightness Overlay:     z-index: 9998
+   Lock Screen:            z-index: 9999
+   Suspension Screen:      z-index: 10000
+   ============================================================ */
+
+/* ===================== DESKTOP BACKGROUND ===================== */
+
+#desktop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background-color: var(--bg);
+  /* Animated grid overlay */
+  background-image:
+    linear-gradient(rgba(0, 212, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: gridDrift 8s linear infinite;
+}
+
+/* Radial depth gradient on top of grid */
+#desktop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(0, 102, 255, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ===================== WALLPAPER LAYER ===================== */
+
+#wallpaper {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity var(--transition-slow);
+  pointer-events: none;
+}
+
+#wallpaper.visible {
+  opacity: 1;
+}
+
+/* ===================== FLOATING ORBS ===================== */
+
+.desktop-orb {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(60px);
+  opacity: 0.18;
+  animation: orbFloat 12s ease-in-out infinite;
+}
+
+.desktop-orb:nth-child(1) {
+  width: clamp(200px, 30vw, 480px);
+  height: clamp(200px, 30vw, 480px);
+  background: radial-gradient(circle, var(--accent-cyan), transparent 70%);
+  top: 5%;
+  left: 10%;
+  animation-delay: 0s;
+  animation-duration: 14s;
+}
+
+.desktop-orb:nth-child(2) {
+  width: clamp(180px, 25vw, 400px);
+  height: clamp(180px, 25vw, 400px);
+  background: radial-gradient(circle, var(--accent-purple), transparent 70%);
+  top: 40%;
+  right: 8%;
+  animation-delay: -5s;
+  animation-duration: 18s;
+}
+
+.desktop-orb:nth-child(3) {
+  width: clamp(150px, 20vw, 320px);
+  height: clamp(150px, 20vw, 320px);
+  background: radial-gradient(circle, var(--accent-blue), transparent 70%);
+  bottom: 15%;
+  left: 35%;
+  animation-delay: -9s;
+  animation-duration: 16s;
+}
+
+/* ===================== TASKBAR ===================== */
+
+#taskbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  height: var(--taskbar-h);
+  display: flex;
+  align-items: center;
+  padding: 0 clamp(8px, 1.5vw, 16px);
+  gap: 8px;
+  background: rgba(2, 4, 8, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(0, 212, 255, 0.08);
+}
+
+/* Logo / branding area */
+#taskbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+#taskbar-logo-img {
+  width: 26px;
+  height: 26px;
+  filter: drop-shadow(var(--glow-sm));
+}
+
+#taskbar-logo-text {
+  font-family: var(--font-display);
+  font-size: clamp(0.65rem, 1vw, 0.8rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--accent-cyan);
+  text-shadow: var(--glow-sm);
+}
+
+/* Active app name — center */
+#taskbar-app-name {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: clamp(0.75rem, 1.2vw, 0.9rem);
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Right side controls group */
+#taskbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Generic taskbar button */
+.taskbar-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
+  cursor: pointer;
+}
+
+.taskbar-btn:hover {
+  color: var(--accent-cyan);
+  background: rgba(0, 212, 255, 0.1);
+  box-shadow: var(--glow-sm);
+}
+
+.taskbar-btn:active {
+  background: rgba(0, 212, 255, 0.2);
+}
+
+/* User avatar */
+#taskbar-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent-cyan);
+  object-fit: cover;
+  cursor: pointer;
+  box-shadow: var(--glow-sm);
+  transition: box-shadow var(--transition-fast);
+  flex-shrink: 0;
+}
+
+#taskbar-avatar:hover {
+  box-shadow: var(--glow-cyan);
+}
+
+/* Clock — two line right-aligned */
+#taskbar-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  line-height: 1.2;
+  cursor: default;
+  min-width: 64px;
+}
+
+#clock-time {
+  font-family: var(--font-mono);
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+
+#clock-date {
+  font-family: var(--font-mono);
+  font-size: clamp(0.55rem, 0.8vw, 0.65rem);
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+/* ===================== DOCK ===================== */
+
+#dock {
+  position: fixed;
+  bottom: clamp(8px, 1.5vh, 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  height: var(--dock-h);
+  display: flex;
+  align-items: center;
+  padding: 0 clamp(10px, 2vw, 20px);
+  gap: clamp(4px, 0.8vw, 8px);
+  background: rgba(2, 4, 8, 0.88);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 212, 255, 0.06);
+}
+
+/* Individual dock icon wrapper */
+.dock-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    transform var(--transition-normal),
+    filter var(--transition-normal),
+    background var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.dock-item:hover {
+  transform: translateY(-10px) scale(1.15);
+  filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.6));
+  background: rgba(0, 212, 255, 0.08);
+}
+
+.dock-item:active {
+  transform: translateY(-6px) scale(1.08);
+}
+
+/* Dock icon image */
+.dock-item-icon {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* Active indicator dot below icon */
+.dock-item::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 6px var(--accent-cyan);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.dock-item.active::after {
+  opacity: 1;
+}
+
+/* Dock tooltip */
+.dock-item .dock-tooltip {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(8, 13, 20, 0.95);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: clamp(0.6rem, 0.9vw, 0.72rem);
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dock-item:hover .dock-tooltip {
+  opacity: 1;
+}
+
+/* Dock divider */
+.dock-divider {
+  width: 1px;
+  height: 36px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+/* Add app button — dashed border */
+#dock-add-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 1.5px dashed var(--border-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+#dock-add-btn:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: rgba(0, 212, 255, 0.08);
+}
+
+/* ===================== DESKTOP ICONS ===================== */
+
+#desktop-icons {
+  position: fixed;
+  top: calc(var(--taskbar-h) + 12px);
+  left: 16px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 80px;
+}
+
+.desktop-icon {
+  width: 80px;
+  height: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  padding: 8px 4px;
+  transition: background var(--transition-fast);
+}
+
+.desktop-icon:hover {
+  background: rgba(0, 212, 255, 0.12);
+}
+
+.desktop-icon:active {
+  background: rgba(0, 212, 255, 0.22);
+}
+
+.desktop-icon.selected {
+  background: rgba(0, 212, 255, 0.18);
+  outline: 1px solid rgba(0, 212, 255, 0.4);
+}
+
+.desktop-icon-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+.desktop-icon-label {
+  font-family: var(--font-body);
+  font-size: clamp(0.6rem, 0.85vw, 0.72rem);
+  color: var(--text-primary);
+  text-align: center;
+  line-height: 1.3;
+  word-break: break-word;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.7);
+  max-width: 72px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* ===================== APP DRAWER ===================== */
+
+#app-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(24px, 5vh, 60px) clamp(16px, 4vw, 48px);
+  background: rgba(2, 4, 8, 0.96);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+#app-drawer.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Drawer search */
+#drawer-search-wrap {
+  width: 100%;
+  max-width: 480px;
+  position: relative;
+  margin-bottom: clamp(20px, 3vh, 36px);
+}
+
+#drawer-search {
+  width: 100%;
+  padding: 12px 20px 12px 44px;
+  background: rgba(13, 21, 32, 0.8);
+  border: 1px solid var(--border-hover);
+  border-radius: 999px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: clamp(0.85rem, 1.2vw, 1rem);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+#drawer-search:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-sm);
+}
+
+#drawer-search::placeholder {
+  color: var(--text-muted);
+}
+
+#drawer-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+/* Drawer scrollable content */
+#drawer-content {
+  width: 100%;
+  max-width: 960px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Category label */
+.drawer-category {
+  font-family: var(--font-display);
+  font-size: clamp(0.6rem, 0.85vw, 0.72rem);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+  border-left: 2px solid var(--accent-cyan);
+  padding-left: 10px;
+  margin: 24px 0 12px;
+}
+
+/* App grid inside each category */
+.drawer-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Individual app tile in drawer */
+.drawer-item {
+  width: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.drawer-item:hover {
+  background: rgba(0, 212, 255, 0.1);
+}
+
+.drawer-item-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.drawer-item-label {
+  font-family: var(--font-body);
+  font-size: clamp(0.6rem, 0.8vw, 0.7rem);
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.3;
+  max-width: 72px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* ===================== NOTIFICATIONS ===================== */
+
+#notifications-container {
+  position: fixed;
+  top: calc(var(--taskbar-h) + 12px);
+  right: 16px;
+  z-index: 5000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: clamp(280px, 30vw, 360px);
+  pointer-events: none;
+}
+
+.notification {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(8, 13, 20, 0.96);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent-cyan);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  pointer-events: all;
+  animation: notifIn 0.3s ease forwards;
+  cursor: pointer;
+}
+
+.notification.removing {
+  animation: notifOut 0.3s ease forwards;
+}
+
+/* Type variants */
+.notification.info    { border-left-color: var(--accent-cyan); }
+.notification.success { border-left-color: var(--accent-green); }
+.notification.warning { border-left-color: var(--accent-yellow); }
+.notification.error   { border-left-color: var(--accent-red); }
+
+.notification-icon {
+  font-size: 1.1rem;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.notification.info    .notification-icon { color: var(--accent-cyan); }
+.notification.success .notification-icon { color: var(--accent-green); }
+.notification.warning .notification-icon { color: var(--accent-yellow); }
+.notification.error   .notification-icon { color: var(--accent-red); }
+
+.notification-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-title {
+  font-family: var(--font-body);
+  font-size: clamp(0.75rem, 1vw, 0.85rem);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.notification-message {
+  font-family: var(--font-body);
+  font-size: clamp(0.65rem, 0.9vw, 0.75rem);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.notification-close {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  padding: 2px;
+}
+
+.notification-close:hover {
+  color: var(--text-primary);
+}
+
+/* Progress bar for auto-dismiss */
+.notification-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: var(--accent-cyan);
+  animation: notifProgress 4s linear forwards;
+}
+
+@keyframes notifProgress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+/* ===================== BRIGHTNESS OVERLAY ===================== */
+
+#brightness-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+/* ===================== LOCK SCREEN ===================== */
+
+#lock-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 3vh, 28px);
+  background: rgba(2, 4, 8, 0.97);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-slow);
+}
+
+#lock-screen.locked {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Lock time display */
+#lock-time {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.04em;
+  text-shadow: var(--glow-cyan);
+  line-height: 1;
+}
+
+#lock-date {
+  font-family: var(--font-body);
+  font-size: clamp(0.85rem, 1.5vw, 1.1rem);
+  color: var(--text-secondary);
+  letter-spacing: 0.1em;
+}
+
+/* Lock avatar */
+#lock-avatar {
+  width: clamp(60px, 8vw, 88px);
+  height: clamp(60px, 8vw, 88px);
+  border-radius: 50%;
+  border: 2px solid var(--accent-cyan);
+  object-fit: cover;
+  box-shadow: var(--glow-cyan);
+}
+
+#lock-username {
+  font-family: var(--font-body);
+  font-size: clamp(0.9rem, 1.3vw, 1.1rem);
+  color: var(--text-primary);
+  letter-spacing: 0.06em;
+}
+
+/* Lock password field */
+#lock-password-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#lock-password {
+  width: clamp(200px, 24vw, 300px);
+  padding: 10px 16px;
+  background: rgba(13, 21, 32, 0.8);
+  border: 1px solid var(--border-hover);
+  border-radius: 999px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: clamp(0.85rem, 1.1vw, 1rem);
+  letter-spacing: 0.2em;
+  text-align: center;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+#lock-password:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-sm);
+}
+
+#lock-submit {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: var(--glow-sm);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+#lock-submit:hover {
+  box-shadow: var(--glow-cyan);
+  transform: scale(1.08);
+}
+
+#lock-error {
+  font-family: var(--font-body);
+  font-size: clamp(0.7rem, 0.9vw, 0.8rem);
+  color: var(--accent-red);
+  min-height: 1.2em;
+}
+
+/* ===================== SUSPENSION SCREEN ===================== */
+
+#suspension-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 2vh, 20px);
+  background: rgba(20, 2, 6, 0.97);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-slow);
+}
+
+#suspension-screen.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#suspension-icon {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  color: var(--accent-red);
+  filter: drop-shadow(0 0 20px rgba(255, 51, 85, 0.6));
+}
+
+#suspension-title {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  color: var(--accent-red);
+  letter-spacing: 0.1em;
+}
+
+#suspension-message {
+  font-family: var(--font-body);
+  font-size: clamp(0.75rem, 1vw, 0.9rem);
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+/* ===================== CONTEXT MENU ===================== */
+
+#context-menu {
+  position: fixed;
+  z-index: 4000;
+  min-width: 180px;
+  background: rgba(8, 13, 20, 0.98);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), var(--glow-sm);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: popIn 0.15s ease;
+  display: none;
+}
+
+#context-menu.visible {
+  display: block;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  font-family: var(--font-body);
+  font-size: clamp(0.75rem, 1vw, 0.85rem);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.context-menu-item:hover {
+  background: rgba(0, 212, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.context-menu-item:active {
+  background: rgba(0, 212, 255, 0.18);
+}
+
+.context-menu-item.danger {
+  color: var(--accent-red);
+}
+
+.context-menu-item.danger:hover {
+  background: rgba(255, 51, 85, 0.12);
+}
+
+.context-menu-icon {
+  width: 16px;
+  text-align: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* ===================== RESPONSIVE — MOBILE (≤768px) ===================== */
+
+@media (max-width: 768px) {
+  /* Hide app name text in taskbar on small screens */
+  #taskbar-app-name {
+    display: none;
+  }
+
+  /* Hide clock on very small screens — optionally show just time */
+  #taskbar-clock {
+    display: none;
+  }
+
+  /* Logo text hidden on smallest */
+  #taskbar-logo-text {
+    display: none;
+  }
+
+  /* Dock: full width, horizontally scrollable */
+  #dock {
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transform: none;
+    width: 100%;
+    border-radius: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    justify-content: flex-start;
+    padding: 0 12px;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    scrollbar-width: none;
+  }
+
+  #dock::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dock-item {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+
+  .dock-item-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .dock-item:hover {
+    transform: translateY(-6px) scale(1.1);
+  }
+
+  /* Desktop icons — 4 column grid at top */
+  #desktop-icons {
+    left: 0;
+    right: 0;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 4px;
+  }
+
+  .desktop-icon {
+    width: calc(25% - 2px);
+    height: 80px;
+  }
+
+  /* App drawer adjustments */
+  #app-drawer {
+    padding: 16px 12px;
+  }
+
+  .drawer-item {
+    width: 70px;
+  }
+
+  #notifications-container {
+    width: calc(100vw - 24px);
+    right: 12px;
+    left: 12px;
+  }
+}
+
+/* ===================== RESPONSIVE — TABLET (769px–1199px) ===================== */
+
+@media (min-width: 769px) and (max-width: 1199px) {
+  .dock-item {
+    width: 56px;
+    height: 56px;
+  }
+
+  .dock-item-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .desktop-icon {
+    width: 76px;
+    height: 86px;
+  }
+}
+
+/* ===================== RESPONSIVE — TV / LARGE (≥1920px) ===================== */
+
+@media (min-width: 1920px) {
+  .dock-item {
+    width: 68px;
+    height: 68px;
+  }
+
+  .dock-item-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  #dock {
+    gap: 10px;
+    padding: 0 28px;
+  }
+
+  .desktop-icon {
+    width: 96px;
+    height: 108px;
+  }
+
+  .desktop-icon-img {
+    width: 42px;
+    height: 42px;
+  }
+
+  #taskbar {
+    padding: 0 28px;
+  }
+
+  #notifications-container {
+    width: 420px;
+  }
+}
+
+/* ===================== RESPONSIVE — 4K (≥3840px) ===================== */
+
+@media (min-width: 3840px) {
+  .dock-item {
+    width: 88px;
+    height: 88px;
+  }
+
+  .dock-item-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  #dock {
+    gap: 14px;
+    padding: 0 40px;
+    border-radius: 999px;
+  }
+
+  .desktop-icon {
+    width: 120px;
+    height: 140px;
+  }
+
+  .desktop-icon-img {
+    width: 56px;
+    height: 56px;
+  }
+
+  #notifications-container {
+    width: 540px;
+  }
+}

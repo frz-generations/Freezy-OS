@@ -1,0 +1,157 @@
+/* ============================================================
+   FRZOS — themes/dark-frz.css
+   FRZ DARK FUTURISTIC — DEFAULT THEME
+   Applied via: <body class="theme-dark-frz">
+   Load order: last, after all other CSS files
+   ============================================================ */
+
+/* ===================== THEME VARIABLE OVERRIDES ===================== */
+/* This is the default theme. Variables mirror main.css :root exactly.
+   Kept here to make it easy to compare and diverge if needed. */
+
+body.theme-dark-frz {
+  /* --- Colors --- */
+  --bg:              #020408;
+  --bg-secondary:    #080d14;
+  --bg-card:         #0d1520;
+  --bg-glass:        rgba(13, 21, 32, 0.85);
+  --accent-cyan:     #00d4ff;
+  --accent-blue:     #0066ff;
+  --accent-purple:   #7b2fff;
+  --accent-green:    #00ff88;
+  --accent-yellow:   #ffcc00;
+  --accent-red:      #ff3355;
+  --text-primary:    #e8f4fd;
+  --text-secondary:  #7a9ab5;
+  --text-muted:      #3d5a73;
+  --border:          rgba(0, 212, 255, 0.15);
+  --border-hover:    rgba(0, 212, 255, 0.4);
+  --border-active:   rgba(0, 212, 255, 0.6);
+  --glow-cyan:       0 0 20px rgba(0, 212, 255, 0.4);
+  --glow-sm:         0 0 10px rgba(0, 212, 255, 0.25);
+  --glow-lg:         0 0 40px rgba(0, 212, 255, 0.3);
+  --danger:          #ff3355;
+  --success:         #00ff88;
+}
+
+/* ===================== BACKGROUND GRADIENTS ===================== */
+
+body.theme-dark-frz #desktop {
+  background-color: #020408;
+  background-image:
+    linear-gradient(rgba(0, 212, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.04) 1px, transparent 1px);
+}
+
+body.theme-dark-frz #desktop::before {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 50%,
+    rgba(0, 102, 255, 0.06) 0%,
+    transparent 70%
+  );
+}
+
+/* ===================== TASKBAR ===================== */
+
+body.theme-dark-frz #taskbar {
+  background: rgba(2, 4, 8, 0.92);
+  border-bottom-color: rgba(0, 212, 255, 0.12);
+  box-shadow:
+    0 2px 20px rgba(0, 0, 0, 0.5),
+    0 1px 0 rgba(0, 212, 255, 0.06);
+}
+
+/* ===================== DOCK ===================== */
+
+body.theme-dark-frz #dock {
+  background: rgba(2, 4, 8, 0.88);
+  border-color: rgba(0, 212, 255, 0.15);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(0, 212, 255, 0.06);
+}
+
+/* ===================== WINDOWS ===================== */
+
+body.theme-dark-frz .window {
+  background: #0d1520;
+  border-color: rgba(0, 212, 255, 0.15);
+}
+
+body.theme-dark-frz .window.active {
+  border-color: rgba(0, 212, 255, 0.45);
+  box-shadow:
+    0 16px 56px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(0, 212, 255, 0.12),
+    0 0 32px rgba(0, 212, 255, 0.12);
+}
+
+body.theme-dark-frz .window-titlebar {
+  background: rgba(2, 4, 8, 0.6);
+  border-bottom-color: rgba(0, 212, 255, 0.1);
+}
+
+/* ===================== SELECTION COLOR ===================== */
+
+body.theme-dark-frz ::selection {
+  background: rgba(0, 212, 255, 0.3);
+  color: #fff;
+}
+
+body.theme-dark-frz ::-moz-selection {
+  background: rgba(0, 212, 255, 0.3);
+  color: #fff;
+}
+
+/* ===================== SCROLLBARS ===================== */
+
+body.theme-dark-frz ::-webkit-scrollbar-track {
+  background: rgba(2, 4, 8, 0.5);
+}
+
+body.theme-dark-frz ::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.4);
+}
+
+body.theme-dark-frz ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.65);
+}
+
+body.theme-dark-frz {
+  scrollbar-color: rgba(0, 212, 255, 0.4) transparent;
+}
+
+/* ===================== WORD PROCESSOR EDITOR ===================== */
+/* The word editor uses a light background — keep it consistent */
+
+body.theme-dark-frz .word-editor {
+  background: #f9fafc;
+  color: #1a2a3a;
+}
+
+/* ===================== WHITEBOARD CANVAS ===================== */
+
+body.theme-dark-frz .wb-canvas {
+  background: #ffffff;
+}
+
+/* ===================== LOCK SCREEN GRADIENT ===================== */
+
+body.theme-dark-frz #lock-screen {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 80%, rgba(0, 102, 255, 0.12), transparent),
+    rgba(2, 4, 8, 0.97);
+}
+
+/* ===================== CONTEXT MENU ===================== */
+
+body.theme-dark-frz #context-menu {
+  background: rgba(8, 13, 20, 0.98);
+  border-color: rgba(0, 212, 255, 0.25);
+}
+
+/* ===================== NOTIFICATIONS ===================== */
+
+body.theme-dark-frz .notification {
+  background: rgba(8, 13, 20, 0.97);
+}

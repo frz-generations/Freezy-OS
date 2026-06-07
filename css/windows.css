@@ -1,0 +1,428 @@
+/* ============================================================
+   FRZOS — windows.css
+   Floating window system: container, title bar, controls,
+   body, resize handle, states (active, minimized, maximized, snapped)
+   ============================================================ */
+
+/* ===================== BASE WINDOW ===================== */
+
+.window {
+  position: fixed;
+  min-width: 320px;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(0, 212, 255, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  /* z-index managed by JS starting at 100, increments per focus */
+  z-index: 100;
+  transition:
+    box-shadow var(--transition-normal),
+    border-color var(--transition-normal);
+  animation: winOpen 0.2s ease forwards;
+  will-change: transform;
+}
+
+/* Window removal — applied by JS before destroying element */
+.window.closing {
+  animation: winClose 0.18s ease forwards;
+  pointer-events: none;
+}
+
+/* ===================== ACTIVE WINDOW ===================== */
+
+.window.active {
+  border-color: rgba(0, 212, 255, 0.45);
+  box-shadow:
+    0 16px 56px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(0, 212, 255, 0.12),
+    0 0 32px rgba(0, 212, 255, 0.12);
+}
+
+.window.inactive {
+  border-color: var(--border);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+/* ===================== WINDOW STATES ===================== */
+
+/* Minimized — hidden entirely (restored from taskbar) */
+.window.minimized {
+  display: none;
+}
+
+/* Maximized — fills full viewport below taskbar */
+.window.maximized {
+  left: 0 !important;
+  top: var(--taskbar-h) !important;
+  width: 100vw !important;
+  height: calc(100vh - var(--taskbar-h)) !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  resize: none;
+}
+
+/* Snapped left — occupies left half */
+.window.snapped-left {
+  left: 0 !important;
+  top: var(--taskbar-h) !important;
+  width: 50vw !important;
+  height: calc(100vh - var(--taskbar-h) - var(--dock-h) - 20px) !important;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0 !important;
+  transition: left 0.25s ease, top 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+
+/* Snapped right — occupies right half */
+.window.snapped-right {
+  left: 50vw !important;
+  top: var(--taskbar-h) !important;
+  width: 50vw !important;
+  height: calc(100vh - var(--taskbar-h) - var(--dock-h) - 20px) !important;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg) !important;
+  transition: left 0.25s ease, top 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+
+/* Snap preview ghost shown while dragging to edge */
+#snap-preview {
+  position: fixed;
+  z-index: 99;
+  background: rgba(0, 212, 255, 0.08);
+  border: 2px solid rgba(0, 212, 255, 0.4);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+#snap-preview.visible {
+  opacity: 1;
+}
+
+/* ===================== WINDOW TITLE BAR ===================== */
+
+.window-titlebar {
+  flex-shrink: 0;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 12px;
+  background: rgba(2, 4, 8, 0.6);
+  border-bottom: 1px solid var(--border);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.window-titlebar:active {
+  cursor: grabbing;
+}
+
+/* Window icon */
+.window-titlebar-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+/* Window title text */
+.window-titlebar-title {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: clamp(0.72rem, 1vw, 0.82rem);
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.03em;
+}
+
+.window.active .window-titlebar-title {
+  color: var(--text-primary);
+}
+
+/* ===================== WINDOW TRAFFIC-LIGHT CONTROLS ===================== */
+
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.window-control {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  position: relative;
+  transition: filter var(--transition-fast), transform var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.window-control:hover {
+  filter: brightness(1.4);
+  transform: scale(1.15);
+}
+
+.window-control:active {
+  transform: scale(0.9);
+}
+
+/* Close — red */
+.window-control.close {
+  background: #ff5f56;
+  box-shadow: 0 0 4px rgba(255, 95, 86, 0.4);
+}
+
+/* Minimize — yellow */
+.window-control.minimize {
+  background: #ffbd2e;
+  box-shadow: 0 0 4px rgba(255, 189, 46, 0.4);
+}
+
+/* Maximize / restore — green */
+.window-control.maximize {
+  background: #27c93f;
+  box-shadow: 0 0 4px rgba(39, 201, 63, 0.4);
+}
+
+/* Optional icon glyphs on hover (shown via pseudo-elements) */
+.window-control.close::before,
+.window-control.minimize::before,
+.window-control.maximize::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  font-size: 9px;
+  color: rgba(0, 0, 0, 0.6);
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
+.window-controls:hover .window-control.close::before    { content: '✕'; opacity: 1; }
+.window-controls:hover .window-control.minimize::before { content: '–'; opacity: 1; }
+.window-controls:hover .window-control.maximize::before { content: '+'; opacity: 1; }
+
+/* ===================== WINDOW BODY ===================== */
+
+.window-body {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  min-height: 0;
+}
+
+/* Loading state — shown while app content initialises */
+.window-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  z-index: 5;
+}
+
+.window-loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-cyan);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ===================== RESIZE HANDLE ===================== */
+
+.window-resize {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  cursor: se-resize;
+  z-index: 10;
+}
+
+/* Visual L-shape indicator */
+.window-resize::before,
+.window-resize::after {
+  content: '';
+  position: absolute;
+  background: var(--border-hover);
+  border-radius: 1px;
+  transition: background var(--transition-fast);
+}
+
+/* Horizontal bar */
+.window-resize::before {
+  right: 3px;
+  bottom: 7px;
+  width: 10px;
+  height: 1.5px;
+}
+
+/* Vertical bar */
+.window-resize::after {
+  right: 7px;
+  bottom: 3px;
+  width: 1.5px;
+  height: 10px;
+}
+
+.window-resize:hover::before,
+.window-resize:hover::after {
+  background: var(--accent-cyan);
+}
+
+/* Hide resize handle in maximized/snapped states */
+.window.maximized    .window-resize,
+.window.snapped-left .window-resize,
+.window.snapped-right .window-resize {
+  display: none;
+}
+
+/* ===================== WINDOW TASKBAR ENTRIES ===================== */
+/* Buttons in the taskbar representing open windows */
+
+.taskbar-window-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: clamp(0.65rem, 0.9vw, 0.75rem);
+  cursor: pointer;
+  max-width: 140px;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.taskbar-window-btn img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.taskbar-window-btn:hover {
+  background: rgba(0, 212, 255, 0.1);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.taskbar-window-btn.active {
+  background: rgba(0, 212, 255, 0.15);
+  border-color: rgba(0, 212, 255, 0.3);
+  color: var(--accent-cyan);
+}
+
+/* ===================== RESPONSIVE — MOBILE (≤768px) ===================== */
+
+@media (max-width: 768px) {
+  /* Windows take full available width on mobile */
+  .window {
+    left: 0 !important;
+    right: 0 !important;
+    top: var(--taskbar-h) !important;
+    width: 100vw !important;
+    min-height: 240px;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+
+  /* No resize handle on touch */
+  .window-resize {
+    display: none !important;
+  }
+
+  /* Slightly taller title bar for touch targets */
+  .window-titlebar {
+    height: 44px;
+  }
+
+  .window-control {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Snap not available on mobile */
+  .window.snapped-left,
+  .window.snapped-right {
+    left: 0 !important;
+    width: 100vw !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* ===================== RESPONSIVE — TV / LARGE (≥1920px) ===================== */
+
+@media (min-width: 1920px) {
+  .window-titlebar {
+    height: 46px;
+  }
+
+  .window-control {
+    width: 16px;
+    height: 16px;
+  }
+
+  .window-titlebar-title {
+    font-size: clamp(0.85rem, 0.9vw, 1rem);
+  }
+
+  .window-titlebar-icon {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* ===================== RESPONSIVE — 4K (≥3840px) ===================== */
+
+@media (min-width: 3840px) {
+  .window {
+    min-width: 640px;
+    min-height: 480px;
+  }
+
+  .window-titlebar {
+    height: 60px;
+  }
+
+  .window-control {
+    width: 20px;
+    height: 20px;
+  }
+}
