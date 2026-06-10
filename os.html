@@ -1955,8 +1955,35 @@ function showHowToSection(key,el){document.querySelectorAll('.howto-item').forEa
 function buildSearch(){return `<div style="display:flex;flex-direction:column;height:100%;overflow:auto"><div class="search-hero"><div class="search-logo"><span>FRZ</span> Search</div><div class="search-form"><input class="app-input" id="search-input" placeholder="Search the web..." style="flex:1" onkeydown="if(event.key==='Enter')doSearch()"><button class="app-btn" onclick="doSearch()">Search</button></div></div><div class="search-results" id="search-results"></div></div>`;}
 function doSearch(){const q=document.getElementById('search-input')?.value?.trim();if(!q)return;const res=document.getElementById('search-results');if(!res)return;res.innerHTML='<div style="text-align:center;padding:20px"><div class="spin" style="margin:0 auto"></div></div>';fetch(`https://www.googleapis.com/customsearch/v1?key=${SEARCH_API_KEY}&cx=${SEARCH_CX}&q=${encodeURIComponent(q)}`).then(r=>r.json()).then(data=>{if(!data.items||!data.items.length){res.innerHTML='<div style="color:var(--text-muted);text-align:center;padding:20px">No results found</div>';return;}res.innerHTML=data.items.map(item=>`<div class="search-result" onclick="window.open('${item.link}','_blank')"><div class="sr-title">${item.title}</div><div class="sr-url">${item.displayLink}</div><div class="sr-desc">${item.snippet||''}</div></div>`).join('');}).catch(()=>{window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank');});}
 
-function buildBrowser(){return `<div style="display:flex;flex-direction:column;height:100%"><div class="browser-bar"><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="browserHistory(-1)">‹</button><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="browserHistory(1)">›</button><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="loadBrowserUrl()">↻</button><input class="app-input" id="browser-url" placeholder="Enter URL..." style="flex:1;padding:5px 10px" value="https://google.com" onkeydown="if(event.key==='Enter')loadBrowserUrl()"><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="window.open(document.getElementById('browser-url').value,'_blank')">↗</button></div><div style="flex:1;position:relative"><iframe id="browser-frame" style="width:100%;height:100%;border:none;background:#fff" src="https://google.com" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div></div>`;}
-function loadBrowserUrl(){let url=document.getElementById('browser-url')?.value?.trim();if(!url)return;if(!url.startsWith('http'))url='https://'+url;const frame=document.getElementById('browser-frame');if(frame)frame.src=url;}
+function buildBrowser(){return `<div style="display:flex;flex-direction:column;height:100%"><div class="browser-bar"><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="browserHistory(-1)">‹</button><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="browserHistory(1)">›</button><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="loadBrowserUrl()">↻</button><input class="app-input" id="browser-url" placeholder="Enter URL..." style="flex:1;padding:5px 10px" value="https://duckduckgo.com" onkeydown="if(event.key==='Enter')loadBrowserUrl()"><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="window.open(document.getElementById('browser-url').value,'_blank')">↗</button></div><div style="flex:1;position:relative"><iframe id="browser-frame" style="width:100%;height:100%;border:none;background:#fff" src="https://duckduckgo.com" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe></div></div>`;}
+function loadBrowserUrl(){
+  let url=document.getElementById('browser-url')?.value?.trim();
+  if(!url)return;
+  if(!url.startsWith('http'))url='https://'+url;
+  document.getElementById('browser-url').value=url;
+  const BLOCKED=['google.com','youtube.com','facebook.com','instagram.com','twitter.com','x.com','linkedin.com','netflix.com','amazon.com','tiktok.com'];
+  const frame=document.getElementById('browser-frame');
+  const wrap=frame&&frame.parentNode;
+  let msg=document.getElementById('browser-blocked-msg');
+  if(!msg&&wrap){
+    msg=document.createElement('div');
+    msg.id='browser-blocked-msg';
+    msg.style.cssText='display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0d1520;padding:24px;text-align:center;position:absolute;inset:0';
+    msg.innerHTML='<div style="font-size:42px">🚫</div>'
+      +'<div style="color:#e8eaf0;font-size:14px;font-weight:600">Site blocks embedding</div>'
+      +'<div style="color:#8892a4;font-size:12px;max-width:300px;line-height:1.7">Google, YouTube, Facebook and most major sites block iframe loading. Use DuckDuckGo or Wikipedia, or tap Open in New Tab.</div>'
+      +'<button class="app-btn" onclick="window.open(document.getElementById(\'browser-url\').value,\'_blank\')">Open in New Tab ↗</button>';
+    wrap.style.position='relative';
+    wrap.appendChild(msg);
+  }
+  if(BLOCKED.some(d=>url.includes(d))){
+    if(frame)frame.style.display='none';
+    if(msg)msg.style.display='flex';
+  } else {
+    if(frame){frame.style.display='block';frame.src=url;}
+    if(msg)msg.style.display='none';
+  }
+}
 function browserHistory(dir){try{if(dir<0)history.back();else history.forward();}catch(e){}}
 
 // =====================================================
