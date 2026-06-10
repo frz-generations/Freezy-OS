@@ -2,284 +2,2286 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Freezy-OS">
 <title>Freezy-OS | FRZ Generations</title>
-<link rel="icon" href="assets/icons/apps/freezy-os.png">
-<link rel="apple-touch-icon" href="assets/icons/apps/freezy-os.png">
-<link rel="manifest" href="public/manifest.json">
-
-<!-- FONTS -->
+<link rel="icon" href="https://frzimage.xo.je/images/freezy-os.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-
-<!-- CSS — loaded from css/ folder -->
-<link rel="stylesheet" href="css/main.css">
-<link rel="stylesheet" href="css/desktop.css">
-<link rel="stylesheet" href="css/windows.css">
-<link rel="stylesheet" href="css/apps.css">
-<link rel="stylesheet" href="css/themes/dark-frz.css" id="theme-css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-
-<!-- FIREBASE SDK -->
+<!-- Firebase compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
-<!-- THIRD-PARTY LIBS -->
+<!-- Maps -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- QR Code generator -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- QR Code scanner (ZXing) for phone-side scanning -->
+<script src="https://unpkg.com/@zxing/browser@latest/umd/index.min.js"></script>
+<!-- Google API for Drive -->
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
-<!-- FIREBASE CONFIG — must load first -->
-<script src="firebase/firebase-config.js"></script>
+<style>
+/* ===== CSS VARIABLES ===== */
+:root{
+  --bg:#020408;--bg-card:#0d1520;--bg-panel:rgba(8,13,20,0.92);
+  --accent-cyan:#00d4ff;--accent-blue:#0066ff;--accent-purple:#7b2fff;
+  --accent-green:#00ff88;--accent-yellow:#ffcc00;--accent-red:#ff3355;
+  --text-primary:#e8f4fd;--text-secondary:#7a9ab5;--text-muted:#3d5a73;
+  --border:rgba(0,212,255,0.15);--border-active:rgba(0,212,255,0.6);
+  --glow-cyan:0 0 20px rgba(0,212,255,0.4);--glow-sm:0 0 10px rgba(0,212,255,0.25);
+  --font-display:'Orbitron',monospace;--font-body:'Rajdhani',sans-serif;--font-mono:'Share Tech Mono',monospace;
+  --taskbar-h:48px;--dock-h:72px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;user-select:none}
+body{background:var(--bg);font-family:var(--font-body);color:var(--text-primary);font-size:14px;}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.4);border-radius:2px}
 
-<!-- CORE JS — foundation, loads in order -->
-<script src="js/core/detect.js"></script>
-<script src="js/core/boot.js"></script>
-<script src="js/core/auth.js"></script>
-<script src="js/core/desktop.js"></script>
-<script src="js/core/window-manager.js"></script>
-<script src="js/core/taskbar.js"></script>
+/* ===== DESKTOP ===== */
+#desktop{position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 10% 20%,rgba(0,102,255,0.08) 0%,transparent 60%),radial-gradient(ellipse 60% 80% at 90% 80%,rgba(123,47,255,0.1) 0%,transparent 60%),#020408;overflow:hidden;}
+#desktop::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;animation:gridDrift 20s linear infinite;}
+@keyframes gridDrift{0%{background-position:0 0}100%{background-position:40px 40px}}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;animation:orbFloat 8s ease-in-out infinite}
+.orb-1{width:400px;height:400px;background:rgba(0,102,255,0.12);top:-100px;left:-100px}
+.orb-2{width:300px;height:300px;background:rgba(123,47,255,0.15);bottom:-80px;right:-80px;animation-delay:-3s}
+.orb-3{width:200px;height:200px;background:rgba(0,212,255,0.08);top:40%;left:60%;animation-delay:-6s}
+@keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(20px,-20px) scale(1.05)}}
+#brightness-overlay{position:fixed;inset:0;background:rgba(0,0,0,0);pointer-events:none;z-index:9998;transition:background 0.3s;}
 
-<!-- SYSTEM JS -->
-<script src="js/system/volume.js"></script>
-<script src="js/system/brightness.js"></script>
-<script src="js/system/sleep.js"></script>
-<script src="js/system/shortcuts.js"></script>
-<script src="js/system/permissions.js"></script>
-<script src="js/system/notifications.js"></script>
+/* ===== WALLPAPER ===== */
+/* FIX: wallpaper-layer was set to opacity:0 and never enabled. Now defaults to visible if url set. */
+#wallpaper-layer{position:fixed;inset:0;z-index:1;background-size:cover;background-position:center;background-repeat:no-repeat;background-attachment:fixed;opacity:0;transition:opacity 0.5s ease;pointer-events:none;}
+#wallpaper-layer.active{opacity:1;}
 
-<!-- STORAGE JS -->
-<script src="js/storage/firestore.js"></script>
-<script src="js/storage/drive.js"></script>
-<script src="js/storage/sheets.js"></script>
+/* ===== TASKBAR ===== */
+#taskbar{position:fixed;top:0;left:0;right:0;height:var(--taskbar-h);background:rgba(2,4,8,0.95);backdrop-filter:blur(24px);border-bottom:1px solid rgba(0,212,255,0.2);display:flex;align-items:center;padding:0 12px;gap:8px;z-index:1000;}
+#taskbar-logo{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:background 0.2s;flex-shrink:0;}
+#taskbar-logo:hover{background:rgba(0,212,255,0.1)}
+.frz-logo-icon{width:28px;height:28px;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:10px;font-weight:700;color:#000;}
+#taskbar-appname{font-family:var(--font-display);font-size:11px;color:var(--text-secondary);flex:1;text-align:center;letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#taskbar-right{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.tb-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;cursor:pointer;color:var(--text-secondary);font-size:14px;transition:all 0.2s;position:relative;border:none;background:transparent;}
+.tb-btn:hover{background:rgba(0,212,255,0.1);color:var(--accent-cyan)}
+.tb-badge{position:absolute;top:2px;right:2px;background:var(--accent-red);color:#fff;font-size:8px;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;}
+#tb-clock{font-family:var(--font-mono);font-size:11px;color:var(--text-primary);display:flex;flex-direction:column;align-items:flex-end;line-height:1.2;cursor:default;padding:0 6px;}
+#tb-time{font-size:13px;color:var(--accent-cyan)}
+#tb-date{font-size:9px;color:var(--text-muted);letter-spacing:1px}
+#tb-user{display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:background 0.2s;}
+#tb-user:hover{background:rgba(0,212,255,0.1)}
+#tb-avatar{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--accent-cyan);object-fit:cover;background:var(--bg-card);}
 
-<!-- APP JS -->
-<script src="js/apps/calculator.js"></script>
-<script src="js/apps/unit-converter.js"></script>
-<script src="js/apps/weather.js"></script>
-<script src="js/apps/prayer-times.js"></script>
-<script src="js/apps/calendar.js"></script>
-<script src="js/apps/maps.js"></script>
-<script src="js/apps/music-player.js"></script>
-<script src="js/apps/file-manager.js"></script>
-<script src="js/apps/code-editor.js"></script>
-<script src="js/apps/office-word.js"></script>
-<script src="js/apps/office-excel.js"></script>
-<script src="js/apps/whiteboard.js"></script>
-<script src="js/apps/settings.js"></script>
-<script src="js/apps/how-to.js"></script>
-<script src="js/apps/search.js"></script>
-<script src="js/apps/browser.js"></script>
-<script src="js/apps/hijri.js"></script>
-<script src="js/apps/religious-cal.js"></script>
-<script src="js/apps/community.js"></script>
-<script src="js/apps/library.js"></script>
+/* ===== DOCK ===== */
+#dock{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);height:var(--dock-h);background:rgba(8,13,20,0.88);backdrop-filter:blur(24px);border:1px solid rgba(0,212,255,0.15);border-radius:16px;display:flex;align-items:center;padding:0 12px;gap:6px;z-index:1000;box-shadow:0 8px 40px rgba(0,0,0,0.6);}
+.dock-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:transform 0.2s cubic-bezier(.34,1.56,.64,1),filter 0.2s;font-size:24px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.06);user-select:none;}
+.dock-icon:hover{transform:translateY(-10px) scale(1.15);filter:drop-shadow(0 0 12px rgba(0,212,255,0.5));}
+.dock-icon.active::after{content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent-cyan);}
+.dock-icon .icon-tooltip{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);font-size:11px;padding:3px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+.dock-icon:hover .icon-tooltip{opacity:1}
+.dock-sep{width:1px;height:36px;background:rgba(0,212,255,0.15);margin:0 4px}
+.dock-add{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:20px;border:1px dashed rgba(0,212,255,0.2);transition:all 0.2s;}
+.dock-add:hover{color:var(--accent-cyan);border-color:var(--accent-cyan);background:rgba(0,212,255,0.05)}
+.app-icon-img{width:100%;height:100%;object-fit:contain;border-radius:8px;}
+.desk-icon .app-icon-img{width:40px;height:40px;}
+.drawer-app .app-icon-img{width:36px;height:36px;}
+.dock-icon .app-icon-img{width:36px;height:36px;border-radius:10px;}
+.win-icon .app-icon-img{width:16px;height:16px;border-radius:3px;}
 
-<!-- QR CONNECT JS -->
-<script src="js/qr-connect/qr-generator.js"></script>
-<script src="js/qr-connect/qr-scanner.js"></script>
-<script src="js/qr-connect/sync.js"></script>
+/* ===== DESKTOP ICONS ===== */
+#desktop-icons{position:fixed;top:calc(var(--taskbar-h) + 12px);left:12px;display:grid;grid-template-columns:80px;grid-auto-rows:90px;gap:4px;z-index:1;}
+.desk-icon{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:8px 4px;border-radius:8px;transition:background 0.15s;}
+.desk-icon:hover{background:rgba(0,212,255,0.1)}
+.desk-icon .icon-img{font-size:32px;line-height:1;display:flex;align-items:center;justify-content:center}
+.desk-icon .icon-label{font-size:11px;font-weight:500;color:var(--text-primary);text-align:center;text-shadow:0 1px 4px rgba(0,0,0,0.8);line-height:1.2;word-break:break-word;}
+
+/* ===== WINDOWS ===== */
+.window{position:fixed;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.7);animation:winOpen 0.2s cubic-bezier(.34,1.2,.64,1);min-width:320px;min-height:240px;transition:box-shadow 0.2s,border-color 0.2s;}
+.window.active{border-color:rgba(0,212,255,0.5);box-shadow:0 24px 80px rgba(0,0,0,0.7),0 0 30px rgba(0,212,255,0.15);}
+.window.minimized{display:none}
+.window.maximized{left:0!important;top:var(--taskbar-h)!important;width:100vw!important;height:calc(100vh - var(--taskbar-h))!important;border-radius:0;}
+@keyframes winOpen{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}
+.win-titlebar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(0,0,0,0.3);border-bottom:1px solid var(--border);cursor:grab;flex-shrink:0;min-height:40px;}
+.win-titlebar:active{cursor:grabbing}
+.win-icon{font-size:16px;display:inline-flex;align-items:center;vertical-align:middle}.win-title{flex:1;font-family:var(--font-display);font-size:10px;font-weight:600;color:var(--text-primary);letter-spacing:1.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.win-controls{display:flex;gap:6px;align-items:center}
+.wbtn{width:14px;height:14px;border-radius:50%;border:none;cursor:pointer;transition:filter 0.15s;}
+.wbtn:hover{filter:brightness(1.3)}
+.wbtn.close{background:#ff5f57}.wbtn.minimize{background:#febc2e}.wbtn.maximize{background:#28c840}
+.win-body{flex:1;overflow:auto;position:relative}
+.win-resize{position:absolute;right:0;bottom:0;width:16px;height:16px;cursor:se-resize;border-right:2px solid var(--border);border-bottom:2px solid var(--border);border-radius:0 0 10px 0;}
+
+/* ===== APP DRAWER ===== */
+#app-drawer{position:fixed;inset:0;background:rgba(2,4,8,0.96);backdrop-filter:blur(32px);z-index:2000;display:flex;flex-direction:column;align-items:center;padding:60px 20px 100px;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity 0.25s;}
+#app-drawer.open{opacity:1;pointer-events:all}
+.drawer-search-wrap{position:relative;width:100%;max-width:560px;margin-bottom:32px;}
+#drawer-search{width:100%;background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.2);border-radius:14px;padding:12px 20px 12px 48px;font-family:var(--font-body);font-size:16px;color:var(--text-primary);outline:none;}
+#drawer-search::placeholder{color:var(--text-muted)}
+.drawer-search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:16px;pointer-events:none;}
+.drawer-category{width:100%;max-width:900px;margin-bottom:24px;}
+.drawer-cat-title{font-family:var(--font-display);font-size:9px;letter-spacing:3px;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;padding-left:8px;border-left:2px solid var(--accent-cyan);}
+.drawer-apps{display:flex;flex-wrap:wrap;gap:8px}
+.drawer-app{display:flex;flex-direction:column;align-items:center;gap:6px;width:80px;padding:12px 4px;border-radius:12px;cursor:pointer;transition:all 0.2s;}
+.drawer-app:hover{background:rgba(0,212,255,0.08);transform:scale(1.05)}
+.drawer-app .dapp-icon{font-size:28px;display:flex;align-items:center;justify-content:center}
+.drawer-app .dapp-name{font-size:10px;color:var(--text-secondary);text-align:center;line-height:1.2;}
+#drawer-close{position:fixed;top:16px;right:16px;background:rgba(255,255,255,0.06);border:1px solid var(--border);color:var(--text-secondary);border-radius:8px;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:2001;}
+#drawer-close:hover{background:rgba(255,82,82,0.15);color:#ff5f57}
+
+/* ===== POPUPS ===== */
+.popup{position:fixed;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;z-index:3000;box-shadow:0 16px 60px rgba(0,0,0,0.7);min-width:200px;animation:popIn 0.15s ease;}
+@keyframes popIn{from{opacity:0;transform:scale(0.95) translateY(-5px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.popup-title{font-family:var(--font-display);font-size:9px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.user-menu-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.user-menu-avatar{width:40px;height:40px;border-radius:50%;border:2px solid var(--accent-cyan)}
+.user-menu-name{font-weight:600;font-size:14px;color:var(--text-primary)}
+.user-menu-email{font-size:11px;color:var(--text-muted)}
+.popup-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--text-secondary);transition:all 0.15s;}
+.popup-item:hover{background:rgba(0,212,255,0.1);color:var(--text-primary)}
+.popup-item.danger:hover{background:rgba(255,51,85,0.1);color:var(--accent-red)}
+.popup-sep{height:1px;background:var(--border);margin:6px 0}
+.slider-row{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12px;color:var(--text-secondary);}
+.slider-row input[type=range]{flex:1;-webkit-appearance:none;height:4px;background:rgba(0,212,255,0.2);border-radius:2px;cursor:pointer;}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent-cyan);}
+
+/* ===== CONTEXT MENU ===== */
+.ctx-menu{position:fixed;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:6px;z-index:4000;min-width:180px;box-shadow:0 12px 40px rgba(0,0,0,0.7);animation:popIn 0.1s ease;}
+.ctx-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-secondary);transition:all 0.1s;}
+.ctx-item:hover{background:rgba(0,212,255,0.1);color:var(--text-primary)}
+.ctx-item.danger:hover{background:rgba(255,51,85,0.1);color:var(--accent-red)}
+.ctx-sep{height:1px;background:var(--border);margin:4px 0}
+
+/* ===== NOTIFICATIONS ===== */
+#notif-container{position:fixed;top:56px;right:12px;display:flex;flex-direction:column;gap:8px;z-index:5000;pointer-events:none;}
+.notif{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:flex-start;gap:10px;min-width:260px;max-width:340px;pointer-events:all;animation:notifIn 0.3s cubic-bezier(.34,1.2,.64,1);}
+@keyframes notifIn{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+.notif.out{animation:notifOut 0.25s ease forwards}
+@keyframes notifOut{to{opacity:0;transform:translateX(100%)}}
+.notif-icon{font-size:18px;flex-shrink:0}
+.notif-title{font-weight:600;font-size:13px;color:var(--text-primary);margin-bottom:2px}
+.notif-msg{font-size:12px;color:var(--text-secondary)}
+.notif.info .notif-icon{color:var(--accent-cyan)}.notif.success .notif-icon{color:var(--accent-green)}.notif.warning .notif-icon{color:var(--accent-yellow)}.notif.error .notif-icon{color:var(--accent-red)}
+
+/* ===== LOCK SCREEN ===== */
+#lock-screen{position:fixed;inset:0;z-index:9999;background:rgba(2,4,8,0.97);backdrop-filter:blur(40px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;opacity:0;pointer-events:none;transition:opacity 0.4s;}
+#lock-screen.visible{opacity:1;pointer-events:all}
+#lock-time{font-family:var(--font-display);font-size:clamp(36px,8vw,72px);font-weight:900;color:var(--text-primary);letter-spacing:4px}
+#lock-date{font-family:var(--font-mono);font-size:clamp(10px,2vw,14px);color:var(--text-muted);letter-spacing:3px;margin-bottom:16px}
+#lock-user{display:flex;flex-direction:column;align-items:center;gap:8px}
+#lock-avatar{width:72px;height:72px;border-radius:50%;border:2px solid var(--accent-cyan)}
+#lock-name{font-family:var(--font-display);font-size:clamp(12px,2vw,16px);color:var(--text-primary)}
+#lock-pass{background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.2);border-radius:10px;padding:10px 16px;color:var(--text-primary);font-family:var(--font-mono);font-size:15px;text-align:center;outline:none;width:240px;letter-spacing:4px;}
+.lock-brand{position:absolute;bottom:24px;font-family:var(--font-display);font-size:10px;letter-spacing:4px;color:var(--text-muted);}
+
+/* ===== SUSPENSION ===== */
+#suspend-screen{position:fixed;inset:0;z-index:9999;background:rgba(2,4,8,0.98);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:40px;}
+#suspend-screen h2{font-family:var(--font-display);font-size:24px;color:var(--accent-red)}
+#suspend-screen p{color:var(--text-secondary);max-width:400px}
+
+/* ===== APP CONTENT ===== */
+.app-content{padding:16px;height:100%;overflow:auto;font-family:var(--font-body)}
+.app-label{font-family:var(--font-display);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px}
+.app-input{width:100%;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:8px;padding:8px 12px;color:var(--text-primary);font-family:var(--font-body);font-size:14px;outline:none;transition:border-color 0.2s;}
+.app-input option{background:#0d1520;color:#e8eaf0;}
+.app-input:focus{border-color:rgba(0,212,255,0.4)}
+.app-btn{background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(0,102,255,0.15));border:1px solid rgba(0,212,255,0.3);color:var(--accent-cyan);font-family:var(--font-body);font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer;transition:all 0.2s;}
+.app-btn:hover{background:linear-gradient(135deg,rgba(0,212,255,0.25),rgba(0,102,255,0.25))}
+.app-btn.danger{border-color:rgba(255,51,85,0.3);color:var(--accent-red);background:rgba(255,51,85,0.08)}
+.app-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+/* ===== CALCULATOR ===== */
+.calc-display{background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;text-align:right;}
+.calc-expr{font-size:12px;color:var(--text-muted);font-family:var(--font-mono);min-height:18px}
+.calc-val{font-size:28px;font-family:var(--font-mono);color:var(--text-primary)}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.calc-btn{background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.12);color:var(--text-primary);font-size:15px;font-family:var(--font-mono);padding:12px 6px;border-radius:8px;cursor:pointer;transition:all 0.15s;text-align:center;}
+.calc-btn:hover{background:rgba(0,212,255,0.15)}
+.calc-btn.op{color:var(--accent-cyan)}.calc-btn.eq{background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));color:#000;font-weight:700;border:none}.calc-btn.fn{color:var(--accent-purple)}
+
+/* ===== WEATHER ===== */
+.weather-main{display:flex;align-items:center;gap:20px;margin:16px 0;padding:16px;background:rgba(0,212,255,0.05);border-radius:12px;border:1px solid var(--border)}
+.weather-icon-big{font-size:clamp(40px,8vw,64px)}
+.weather-temp{font-size:clamp(28px,6vw,48px);font-family:var(--font-display);color:var(--accent-cyan)}
+.weather-desc{color:var(--text-secondary);font-size:14px;text-transform:capitalize}
+.weather-details{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.weather-stat{background:rgba(0,0,0,0.2);border-radius:8px;padding:8px;text-align:center}
+.weather-stat-val{font-family:var(--font-mono);font-size:14px;color:var(--text-primary)}
+.weather-stat-lbl{font-size:10px;color:var(--text-muted);margin-top:2px}
+
+/* ===== PRAYER ===== */
+.prayer-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+.prayer-card{background:rgba(0,0,0,0.2);border:1px solid var(--border);border-radius:10px;padding:12px}
+.prayer-name{font-size:12px;color:var(--text-muted);margin-bottom:4px}
+.prayer-time{font-size:20px;font-family:var(--font-mono);color:var(--accent-cyan)}
+.prayer-card.next{border-color:rgba(0,212,255,0.4);background:rgba(0,212,255,0.05)}
+.prayer-countdown{background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.2);border-radius:12px;padding:16px;text-align:center;margin:12px 0;}
+.prayer-countdown-lbl{font-size:11px;color:var(--text-muted);margin-bottom:4px}
+.prayer-countdown-time{font-size:clamp(20px,4vw,28px);font-family:var(--font-display);color:var(--accent-cyan)}
+
+/* ===== SETTINGS ===== */
+.settings-layout{display:flex;height:100%}
+.settings-nav{width:160px;flex-shrink:0;border-right:1px solid var(--border);padding:8px;display:flex;flex-direction:column;gap:2px;}
+.settings-nav-item{padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text-secondary);transition:all 0.15s;display:flex;align-items:center;gap:8px;}
+.settings-nav-item:hover{background:rgba(0,212,255,0.08);color:var(--text-primary)}
+.settings-nav-item.active{background:rgba(0,212,255,0.12);color:var(--accent-cyan)}
+.settings-panel{flex:1;padding:16px;overflow:auto}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(0,212,255,0.06);gap:12px;}
+.setting-name{font-size:14px;color:var(--text-primary)}
+.setting-desc{font-size:11px;color:var(--text-muted);margin-top:2px}
+.settings-section-title{font-family:var(--font-display);font-size:9px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;margin-top:12px;}
+.toggle{width:40px;height:22px;background:rgba(255,255,255,0.1);border-radius:11px;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;border:1px solid var(--border);}
+.toggle.on{background:rgba(0,212,255,0.4);border-color:var(--accent-cyan)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform 0.2s;}
+.toggle.on::after{transform:translateX(18px)}
+
+/* ===== UNIT CONVERTER ===== */
+.convert-wrap{display:flex;gap:12px;align-items:flex-end;margin:12px 0}
+.convert-result{font-size:24px;font-family:var(--font-mono);color:var(--accent-cyan);text-align:center;padding:12px;background:rgba(0,212,255,0.05);border-radius:10px;border:1px solid var(--border);margin-top:8px;}
+
+/* ===== MAPS ===== */
+#map-container{height:100%;background:#0d1a2a;display:flex;flex-direction:column;}
+#map-leaflet{flex:1;min-height:0;}
+.map-toolbar{display:flex;gap:8px;padding:6px;background:rgba(0,0,0,0.5);border-bottom:1px solid var(--border);align-items:center;flex-shrink:0;}
+
+/* ===== FILE MANAGER ===== */
+.fm-layout{display:flex;height:100%}
+.fm-sidebar{width:160px;flex-shrink:0;border-right:1px solid var(--border);padding:8px;overflow-y:auto;}
+.fm-tree-item{padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;transition:all 0.15s;}
+.fm-tree-item:hover,.fm-tree-item.active{background:rgba(0,212,255,0.08);color:var(--text-primary)}
+.fm-main{flex:1;display:flex;flex-direction:column}
+.fm-toolbar{display:flex;gap:6px;padding:6px 8px;border-bottom:1px solid var(--border);align-items:center;flex-wrap:wrap;}
+.fm-grid{flex:1;padding:12px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;overflow-y:auto}
+.fm-file{display:flex;flex-direction:column;align-items:center;gap:4px;width:72px;padding:8px 4px;border-radius:8px;cursor:pointer;transition:background 0.15s;text-align:center;}
+.fm-file:hover{background:rgba(0,212,255,0.08)}
+.fm-file-icon{font-size:28px}.fm-file-name{font-size:10px;color:var(--text-secondary);word-break:break-all;line-height:1.2}
+.fm-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-muted);gap:8px;font-size:13px;text-align:center;padding:20px;}
+.fm-breadcrumb{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);padding:4px 8px;flex:1;}
+.fm-status{font-size:10px;color:var(--text-muted);padding:4px 8px;border-top:1px solid var(--border);}
+
+/* ===== MUSIC ===== */
+.music-layout{display:flex;height:100%}
+.music-player{flex:1;display:flex;flex-direction:column;padding:20px;align-items:center;gap:16px;overflow-y:auto;}
+.music-art{width:clamp(100px,20vw,160px);height:clamp(100px,20vw,160px);border-radius:16px;background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));display:flex;align-items:center;justify-content:center;font-size:64px;animation:musicArt 4s linear infinite paused;}
+.music-art.playing{animation-play-state:running}
+@keyframes musicArt{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.music-title{font-size:clamp(13px,2vw,16px);font-weight:600;color:var(--text-primary);text-align:center}
+.music-artist{font-size:13px;color:var(--text-muted);text-align:center}
+.music-bar{width:100%;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;cursor:pointer;}
+.music-fill{height:100%;background:linear-gradient(90deg,var(--accent-cyan),var(--accent-blue));border-radius:2px;width:0%}
+.music-times{display:flex;justify-content:space-between;font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-top:4px}
+.music-controls{display:flex;gap:16px;align-items:center}
+.mc-btn{color:var(--text-muted);font-size:20px;cursor:pointer;transition:color 0.2s}.mc-btn:hover{color:var(--text-primary)}
+.mc-play{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));display:flex;align-items:center;justify-content:center;font-size:18px;color:#000;cursor:pointer;}
+.music-playlist{width:200px;border-left:1px solid var(--border);padding:12px;overflow-y:auto;}
+.playlist-item{padding:8px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);transition:all 0.15s;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.playlist-item:hover,.playlist-item.active{background:rgba(0,212,255,0.08);color:var(--text-primary)}
+
+/* ===== CODE EDITOR ===== */
+.editor-layout{display:flex;flex-direction:column;height:100%}
+.editor-toolbar{display:flex;gap:8px;padding:6px 10px;background:rgba(0,0,0,0.3);border-bottom:1px solid var(--border);align-items:center;flex-wrap:wrap;}
+.editor-area{flex:1;position:relative;min-height:0}
+.editor-textarea{width:100%;height:100%;background:rgba(0,0,0,0.5);border:none;resize:none;outline:none;color:var(--accent-green);font-family:var(--font-mono);font-size:13px;padding:12px;line-height:1.6;tab-size:2;}
+.editor-output{height:120px;background:rgba(0,0,0,0.6);border-top:1px solid var(--border);padding:8px 12px;font-family:var(--font-mono);font-size:12px;color:var(--accent-green);overflow-y:auto;}
+
+/* ===== WORD ===== */
+.word-toolbar{display:flex;flex-wrap:wrap;gap:4px;padding:8px;background:rgba(0,0,0,0.3);border-bottom:1px solid var(--border);}
+.word-tool{width:28px;height:28px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text-secondary);transition:all 0.15s;border:1px solid transparent;}
+.word-tool:hover{background:rgba(0,212,255,0.1);color:var(--text-primary)}
+.word-editor{flex:1;padding:20px 40px;background:rgba(255,255,255,0.02);outline:none;font-family:'Georgia',serif;font-size:14px;line-height:1.8;color:var(--text-primary);overflow-y:auto;min-height:200px;}
+
+/* ===== WHITEBOARD ===== */
+#wb-canvas{cursor:crosshair;display:block;background:#0a1420}
+.wb-toolbar{display:flex;gap:6px;padding:6px 10px;background:rgba(0,0,0,0.5);border-bottom:1px solid var(--border);align-items:center;flex-wrap:wrap;}
+.wb-tool{padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text-muted);border:1px solid transparent;transition:all 0.15s;}
+.wb-tool:hover,.wb-tool.active{background:rgba(0,212,255,0.1);color:var(--accent-cyan);border-color:rgba(0,212,255,0.2)}
+.wb-color-picker{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid var(--border);padding:0;}
+
+/* ===== HOW-TO ===== */
+.howto-nav{display:flex;flex-direction:column;gap:2px;padding:8px;border-right:1px solid var(--border);width:160px;flex-shrink:0;overflow-y:auto}
+.howto-item{padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);transition:all 0.15s}
+.howto-item:hover,.howto-item.active{background:rgba(0,212,255,0.08);color:var(--text-primary)}
+.howto-content{flex:1;padding:20px;overflow-y:auto;line-height:1.7;font-size:13px;color:var(--text-secondary)}
+.howto-content h3{font-family:var(--font-display);font-size:12px;letter-spacing:2px;color:var(--accent-cyan);margin-bottom:12px;margin-top:20px}
+.howto-content h3:first-child{margin-top:0}
+.shortcut-table{width:100%;border-collapse:collapse;margin-top:8px}
+.shortcut-table td{padding:6px 8px;border-bottom:1px solid rgba(0,212,255,0.06);font-size:12px}
+.shortcut-table td:first-child{font-family:var(--font-mono);color:var(--accent-cyan);background:rgba(0,212,255,0.05);border-radius:4px;white-space:nowrap}
+
+/* ===== SEARCH ===== */
+.search-hero{display:flex;flex-direction:column;align-items:center;padding:40px 20px;gap:16px;}
+.search-logo{font-family:var(--font-display);font-size:clamp(18px,4vw,28px);font-weight:900;letter-spacing:4px}
+.search-logo span{color:var(--accent-cyan)}
+.search-form{display:flex;gap:8px;width:100%;max-width:500px}
+.search-results{padding:0 16px 16px}
+.search-result{padding:12px;border-bottom:1px solid rgba(0,212,255,0.06);cursor:pointer;transition:background 0.15s;border-radius:6px;}
+.search-result:hover{background:rgba(0,212,255,0.05)}
+.sr-title{font-size:14px;color:var(--accent-cyan);margin-bottom:2px}
+.sr-url{font-size:10px;color:var(--accent-green);font-family:var(--font-mono);margin-bottom:4px}
+.sr-desc{font-size:12px;color:var(--text-secondary)}
+
+/* ===== BROWSER ===== */
+.browser-bar{display:flex;gap:6px;padding:6px 8px;background:rgba(0,0,0,0.4);border-bottom:1px solid var(--border);align-items:center;}
+
+/* ===== QR CONNECT ===== */
+.qr-wrap{display:flex;flex-direction:column;align-items:center;padding:16px;gap:12px;overflow-y:auto;}
+.qr-code-box{background:#fff;padding:16px;border-radius:12px;}
+.qr-info{font-size:11px;color:var(--text-muted);text-align:center;max-width:280px;line-height:1.6;}
+.qr-timer{font-family:var(--font-mono);font-size:22px;color:var(--accent-cyan);}
+.qr-code-input{background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.3);border-radius:12px;padding:12px 16px;text-align:center;font-family:var(--font-display);font-size:clamp(22px,5vw,32px);letter-spacing:8px;color:var(--accent-cyan);font-weight:700;margin:4px 0;width:100%;max-width:260px;}
+.qr-connect-input{width:100%;max-width:260px;background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);border-radius:10px;padding:10px 16px;color:var(--text-primary);font-family:var(--font-mono);font-size:18px;text-align:center;outline:none;letter-spacing:4px;}
+.qr-connect-input:focus{border-color:var(--accent-cyan)}
+.qr-scanner-video{width:100%;max-width:260px;border-radius:10px;border:2px solid var(--accent-cyan);background:#000;}
+.qr-tabs{display:flex;border-bottom:1px solid var(--border);width:100%;max-width:320px;margin-bottom:4px;}
+.qr-tab{flex:1;padding:8px;font-size:12px;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;text-align:center;transition:all 0.15s;}
+.qr-tab.active{color:var(--accent-cyan);border-bottom-color:var(--accent-cyan);}
+
+/* ===== CALENDAR ===== */
+.cal-header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.cal-nav{width:28px;height:28px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;background:rgba(0,212,255,0.08);color:var(--accent-cyan);border:1px solid var(--border)}
+.cal-month{font-family:var(--font-display);font-size:14px;flex:1;text-align:center;letter-spacing:2px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-dow{text-align:center;font-size:10px;color:var(--text-muted);padding:4px;font-family:var(--font-mono)}
+.cal-day{text-align:center;padding:6px;border-radius:6px;font-size:13px;font-family:var(--font-mono);cursor:pointer;transition:background 0.15s;color:var(--text-secondary);min-height:32px;}
+.cal-day:hover{background:rgba(0,212,255,0.08)}
+.cal-day.today{background:rgba(0,212,255,0.15);color:var(--accent-cyan);font-weight:700}
+.cal-day.other-month{color:var(--text-muted)}
+
+/* ===== TABS ===== */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{padding:8px 16px;font-size:13px;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;transition:all 0.15s;}
+.tab.active{color:var(--accent-cyan);border-bottom-color:var(--accent-cyan)}
+
+/* ===== SPINNER ===== */
+.spin{width:24px;height:24px;border:2px solid rgba(0,212,255,0.2);border-top-color:var(--accent-cyan);border-radius:50%;animation:spin 0.6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== TV / 4K (≥1920px) ===== */
+@media(min-width:1920px){
+  :root{--taskbar-h:60px;--dock-h:96px;font-size:18px;}
+  body{font-size:18px}
+  .dock-icon{width:72px;height:72px;font-size:32px}
+  .dock-icon .app-icon-img{width:48px;height:48px;}
+  .desk-icon .icon-img{font-size:44px}
+  .desk-icon .app-icon-img{width:52px;height:52px;}
+  .desk-icon .icon-label{font-size:14px}
+  .desk-icon{width:96px;padding:10px 6px}
+  #desktop-icons{grid-template-columns:96px;gap:8px}
+  .tb-btn{width:44px;height:44px;font-size:20px}
+  #tb-time{font-size:18px}#tb-date{font-size:12px}
+  .frz-logo-icon{width:40px;height:40px;font-size:14px}
+  #tb-avatar{width:40px;height:40px}
+  .window{min-width:480px;min-height:360px}
+  .win-title{font-size:13px}
+  .app-input{font-size:17px;padding:11px 18px}
+  .app-btn{font-size:16px;padding:11px 22px}
+  .popup{min-width:280px}.popup-item{font-size:16px}
+  #drawer-search{font-size:20px}
+  .drawer-app{width:108px}
+  .drawer-app .dapp-icon{font-size:40px}
+  .drawer-app .dapp-name{font-size:13px}
+  .calc-val{font-size:40px}
+  .calc-btn{font-size:20px;padding:18px}
+  .notif{min-width:340px;max-width:440px}
+  .notif-title{font-size:16px}.notif-msg{font-size:14px}
+  /* TV: windows open centered and bigger */
+  .window.auto-size{width:min(900px,80vw)!important;height:min(680px,75vh)!important}
+  #lock-time{font-size:96px}
+  #lock-pass{width:320px;font-size:18px}
+}
+
+/* ===== LARGE TV (≥2560px) ===== */
+@media(min-width:2560px){
+  :root{--taskbar-h:72px;--dock-h:110px;}
+  body{font-size:22px}
+  .dock-icon{width:90px;height:90px;font-size:40px}
+  .dock-icon .app-icon-img{width:60px;height:60px;}
+  .desk-icon .icon-img{font-size:56px}
+  .desk-icon .app-icon-img{width:64px;height:64px;}
+  .tb-btn{width:54px;height:54px;font-size:24px}
+  #tb-time{font-size:22px}
+  .drawer-app{width:130px}
+  .drawer-app .dapp-icon{font-size:52px}
+}
+
+/* ===== TABLET (769-1199px) ===== */
+@media(min-width:769px) and (max-width:1199px){
+  .drawer-app{width:90px}
+  .window{min-width:280px}
+}
+
+/* ===== MOBILE (≤768px) ===== */
+@media(max-width:768px){
+  :root{--taskbar-h:44px;--dock-h:60px;}
+  #taskbar-appname{display:none}
+  #tb-clock{display:none}
+  #taskbar-right{gap:2px}
+  .tb-btn{width:28px;height:28px;font-size:12px}
+  #dock{width:calc(100vw - 16px);padding:0 8px;gap:4px;overflow-x:auto;justify-content:flex-start;border-radius:12px;}
+  .dock-icon{width:44px;height:44px;font-size:20px;flex-shrink:0}
+  .dock-icon .app-icon-img{width:30px;height:30px;}
+  #desktop-icons{grid-template-columns:repeat(4,72px);gap:2px;left:4px;}
+  .desk-icon{width:72px;padding:6px 2px}
+  .desk-icon .icon-img{font-size:24px}
+  .desk-icon .app-icon-img{width:28px;height:28px;}
+  .desk-icon .icon-label{font-size:9px}
+  .window{left:0!important;top:var(--taskbar-h)!important;width:100vw!important;height:calc(100vh - var(--taskbar-h) - var(--dock-h) - 16px)!important;border-radius:8px;}
+  .window.maximized{height:calc(100vh - var(--taskbar-h))!important}
+  #app-drawer{padding:50px 12px 80px}
+  .drawer-app{width:70px}
+  #lock-time{font-size:48px}
+  .music-layout{flex-direction:column}
+  .music-playlist{width:100%;border-left:none;border-top:1px solid var(--border);max-height:150px}
+  .settings-layout{flex-direction:column}
+  .settings-nav{width:100%;flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1px solid var(--border);}
+  .fm-layout{flex-direction:column}
+  .fm-sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);display:flex;flex-direction:row;flex-wrap:wrap;gap:4px;padding:8px;max-height:80px;}
+  .howto-nav{width:100%;border-right:none;border-bottom:1px solid var(--border);flex-direction:row;flex-wrap:wrap;max-height:80px;overflow-y:auto;}
+  .notif{min-width:200px;max-width:280px}
+  .weather-main{flex-direction:column;align-items:flex-start;gap:8px}
+  .prayer-grid{grid-template-columns:repeat(2,1fr)}
+  .popup{max-width:calc(100vw - 16px)}
+  #user-menu{right:4px!important}
+}
+</style>
 </head>
-<body class="theme-dark-frz">
-
-<!-- SYSTEM OVERLAYS -->
-<div id="bright-ov"></div>
-<div id="wp-layer"></div>
-
-<!-- DESKTOP BACKGROUND -->
+<body>
+<div id="brightness-overlay"></div>
+<div id="wallpaper-layer"></div>
 <div id="desktop">
-  <div class="orb orb1"></div>
-  <div class="orb orb2"></div>
-  <div class="orb orb3"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
 </div>
+<div id="desktop-icons"></div>
 
-<!-- DESKTOP ICONS -->
-<div id="deskicons"></div>
-
-<!-- ═══ TASKBAR ═══ -->
 <div id="taskbar">
-  <div id="tb-logo" onclick="toggleDrawer()" title="App Drawer">
-    <img
-      src="assets/icons/apps/freezy-os.png"
-      alt="FRZ"
-      onerror="this.outerHTML=\\'<div class=\\\\'frz-logo-fallback\\\\'>FRZ</div>\\'">
+  <div id="taskbar-logo" onclick="toggleDrawer()">
+    <div class="frz-logo-icon">FRZ</div>
   </div>
-  <div id="tb-appname">FREEZY-OS</div>
-  <div id="tb-right">
-    <button class="tbb" title="Search" onclick="openApp(\\'search\\')">🔍</button>
-    <button class="tbb" title="QR Connect" onclick="openApp(\\'qrconnect\\')">📱</button>
-    <button class="tbb" title="Notifications" id="notif-bell" onclick="toggleNotifCenter()">
-      🔔<span class="tb-badge" id="notif-badge" style="display:none">0</span>
-    </button>
-    <button class="tbb" id="conn-st" title="Online">📶</button>
-    <button class="tbb" title="Volume" onclick="togglePopup(\\'vol-pop\\')">🔊</button>
-    <button class="tbb" title="Brightness" onclick="togglePopup(\\'bright-pop\\')">☀️</button>
-    <div id="tb-clock">
-      <span id="tb-time">--:--</span>
-      <span id="tb-date">---</span>
-    </div>
-    <div id="tb-user" onclick="togglePopup(\\'user-menu\\')">
+  <div id="taskbar-appname">FREEZY-OS</div>
+  <div id="taskbar-right">
+    <button class="tb-btn" title="Search" onclick="openApp('search')">🔍</button>
+    <button class="tb-btn" title="QR Connect" onclick="openApp('qrconnect')">📱</button>
+    <button class="tb-btn" title="Notifications" id="notif-bell" onclick="toggleNotifCenter()">🔔<span class="tb-badge" id="notif-badge" style="display:none">0</span></button>
+    <button class="tb-btn" id="conn-status" title="Connection">📶</button>
+    <button class="tb-btn" title="Volume" onclick="togglePopup('vol-popup')">🔊</button>
+    <button class="tb-btn" title="Brightness" onclick="togglePopup('bright-popup')">☀️</button>
+    <div id="tb-clock"><span id="tb-time">--:--</span><span id="tb-date">---</span></div>
+    <div id="tb-user" onclick="togglePopup('user-menu')">
       <img id="tb-avatar" src="" alt="User">
     </div>
   </div>
 </div>
 
-<!-- VOLUME POPUP -->
-<div class="popup" id="vol-pop" style="display:none;top:56px;right:80px;">
-  <div class="pop-title">Volume</div>
-  <div class="slrow">🔇<input type="range" id="vol-sl" min="0" max="100" value="70" oninput="setVolume(this.value)">🔊</div>
-  <div style="text-align:center;font-size:11px;font-family:var(--fm);color:var(--c)" id="vol-lbl">70%</div>
+<div class="popup" id="vol-popup" style="display:none;top:56px;right:80px;">
+  <div class="popup-title">Volume</div>
+  <div class="slider-row">🔇<input type="range" id="vol-slider" min="0" max="100" value="70" oninput="setVolume(this.value)">🔊</div>
+  <div style="text-align:center;font-size:11px;font-family:var(--font-mono);color:var(--accent-cyan)" id="vol-label">70%</div>
 </div>
-
-<!-- BRIGHTNESS POPUP -->
-<div class="popup" id="bright-pop" style="display:none;top:56px;right:50px;">
-  <div class="pop-title">Brightness</div>
-  <div class="slrow">🌑<input type="range" id="bright-sl" min="10" max="100" value="100" oninput="setBrightness(this.value)">☀️</div>
-  <div style="text-align:center;font-size:11px;font-family:var(--fm);color:var(--c)" id="bright-lbl">100%</div>
+<div class="popup" id="bright-popup" style="display:none;top:56px;right:50px;">
+  <div class="popup-title">Brightness</div>
+  <div class="slider-row">🌑<input type="range" id="bright-slider" min="10" max="100" value="100" oninput="setBrightness(this.value)">☀️</div>
+  <div style="text-align:center;font-size:11px;font-family:var(--font-mono);color:var(--accent-cyan)" id="bright-label">100%</div>
 </div>
-
-<!-- USER MENU -->
 <div class="popup" id="user-menu" style="display:none;top:56px;right:8px;min-width:240px;">
-  <div class="umhdr">
-    <img class="umav" id="menu-av" src="" alt="">
-    <div>
-      <div class="umname" id="menu-name">User</div>
-      <div class="umemail" id="menu-email">user@email.com</div>
-    </div>
+  <div class="user-menu-header">
+    <img class="user-menu-avatar" id="menu-avatar" src="" alt="User">
+    <div><div class="user-menu-name" id="menu-name">User</div><div class="user-menu-email" id="menu-email">user@email.com</div></div>
   </div>
-  <div class="pop-item" onclick="openApp(\\'settings\\')">⚙️ Settings</div>
-  <div class="pop-item" onclick="lockScreen()">🔒 Lock Screen</div>
-  <div class="pop-sep"></div>
-  <div class="pop-item dng" onclick="logout()">🚪 Log Out</div>
+  <div class="popup-item" onclick="openApp('settings')">⚙️ Settings</div>
+  <div class="popup-item" onclick="lockScreen()">🔒 Lock Screen</div>
+  <div class="popup-sep"></div>
+  <div class="popup-item danger" onclick="logout()">🚪 Log Out</div>
 </div>
-
-<!-- NOTIFICATION CENTER -->
 <div class="popup" id="notif-center" style="display:none;top:56px;right:8px;min-width:300px;max-width:340px;max-height:400px;overflow-y:auto;">
-  <div class="pop-title">Notifications</div>
-  <div id="notif-hist"><div style="color:var(--t3);font-size:12px;text-align:center;padding:16px">No notifications</div></div>
+  <div class="popup-title">Notifications</div>
+  <div id="notif-history"><div style="color:var(--text-muted);font-size:12px;text-align:center;padding:16px">No notifications</div></div>
 </div>
 
-<!-- DOCK -->
 <div id="dock"></div>
-
-<!-- APP DRAWER -->
-<div id="drawer">
-  <button id="dr-close" onclick="toggleDrawer()">✕</button>
-  <div class="dr-swrap">
-    <span class="dr-sico">🔍</span>
-    <input type="text" id="dr-search" placeholder="Search apps..." oninput="filterDrawer(this.value)">
+<div id="app-drawer">
+  <button id="drawer-close" onclick="toggleDrawer()">✕</button>
+  <div class="drawer-search-wrap">
+    <span class="drawer-search-icon">🔍</span>
+    <input type="text" id="drawer-search" placeholder="Search apps..." oninput="filterDrawerApps(this.value)">
   </div>
-  <div id="dr-cats"></div>
+  <div id="drawer-categories"></div>
 </div>
 
-<!-- NOTIFICATION TOASTS -->
-<div id="notifbox"></div>
+<div id="notif-container"></div>
+<div class="ctx-menu" id="ctx-menu" style="display:none"></div>
+<div id="windows"></div>
 
-<!-- CONTEXT MENU -->
-<div class="ctxm" id="ctxm" style="display:none"></div>
-
-<!-- WINDOWS CONTAINER -->
-<div id="wins"></div>
-
-<!-- LOCK SCREEN -->
-<div id="lockscr">
+<div id="lock-screen">
   <div id="lock-time">00:00</div>
   <div id="lock-date">LOADING...</div>
-  <div id="lock-userblock">
-    <img id="lock-av" src="" alt="">
+  <div id="lock-user">
+    <img id="lock-avatar" src="" alt="">
     <div id="lock-name">User</div>
-    <input type="password" id="lock-pass"
-      placeholder="Password or press Enter"
-      onkeydown="unlockCheck(event)">
-    <div class="lock-unlock-btn" onclick="unlockByPass()">→ UNLOCK</div>
+    <input type="password" id="lock-pass" placeholder="Enter password or press Enter" onkeydown="unlockCheck(event)" autocomplete="off">
+    <div id="lock-msg" style="font-size:11px;color:var(--accent-red);min-height:16px;margin-top:4px;text-align:center"></div>
+    <div id="lock-timer-msg" style="font-size:11px;color:var(--accent-yellow);min-height:14px;text-align:center"></div>
+    <button onclick="unlockByPass()" style="margin-top:8px;background:rgba(0,212,255,0.12);border:1px solid rgba(0,212,255,0.3);color:var(--accent-cyan);padding:6px 28px;border-radius:8px;cursor:pointer;font-family:var(--font-display);font-size:11px;letter-spacing:2px">UNLOCK</button>
   </div>
   <div class="lock-brand">FREEZY-OS • FRZ GENERATIONS © 2026</div>
 </div>
 
-<!-- SUSPENSION SCREEN -->
-<div id="suspscr">
-  <div class="sus-icon">🚫</div>
+<!-- FREEZE SCREEN — shown after too many wrong attempts -->
+<div id="freeze-screen" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(2,4,8,0.99);backdrop-filter:blur(40px);overflow-y:auto;padding:40px 20px">
+  <div style="max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
+    <div style="text-align:center;padding:20px 0">
+      <div style="font-size:64px;margin-bottom:8px">🧊</div>
+      <div style="font-family:var(--font-display);font-size:22px;letter-spacing:4px;color:var(--accent-cyan);margin-bottom:4px">ACCOUNT FROZEN</div>
+      <div style="font-size:13px;color:var(--accent-red)">For safety reasons, your Freezy-OS session has been frozen</div>
+    </div>
+    <div style="background:rgba(255,82,82,0.07);border:1px solid rgba(255,82,82,0.2);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div style="font-family:var(--font-display);font-size:10px;letter-spacing:3px;color:var(--text-muted);border-bottom:1px solid var(--border);padding-bottom:8px">FREEZE DETAILS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+        <div>
+          <div style="color:var(--text-muted);font-size:10px;letter-spacing:1px;margin-bottom:2px">WHY FROZEN</div>
+          <div style="color:var(--text-primary)" id="fz-reason">Too many wrong password attempts</div>
+        </div>
+        <div>
+          <div style="color:var(--text-muted);font-size:10px;letter-spacing:1px;margin-bottom:2px">FROZEN AT</div>
+          <div style="color:var(--text-primary);font-family:var(--font-mono);font-size:11px" id="fz-time">--</div>
+        </div>
+        <div>
+          <div style="color:var(--text-muted);font-size:10px;letter-spacing:1px;margin-bottom:2px">FROM DEVICE</div>
+          <div style="color:var(--text-primary);font-size:11px" id="fz-device">--</div>
+        </div>
+        <div>
+          <div style="color:var(--text-muted);font-size:10px;letter-spacing:1px;margin-bottom:2px">IP ADDRESS</div>
+          <div style="color:var(--accent-yellow);font-family:var(--font-mono);font-size:11px" id="fz-ip">Fetching...</div>
+        </div>
+      </div>
+    </div>
+    <div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:12px;padding:20px">
+      <div style="font-family:var(--font-display);font-size:10px;letter-spacing:3px;color:var(--text-muted);margin-bottom:12px">HOW TO UNFREEZE</div>
+      <div style="font-size:12px;color:var(--text-secondary);line-height:1.8">
+        Your account has been flagged for too many failed unlock attempts. To restore access:<br><br>
+        <span style="color:var(--accent-cyan)">📧</span> Email: <a href="mailto:frzgenerations@gmail.com" style="color:var(--accent-cyan)">frzgenerations@gmail.com</a><br>
+        <span style="color:var(--accent-cyan)">📱</span> WhatsApp: <a href="https://wa.me/917012523494" target="_blank" style="color:var(--accent-cyan)">+91 7012523494</a><br>
+        <span style="color:var(--accent-cyan)">🌐</span> Support: <a href="https://frzgenerations.netlify.app" target="_blank" style="color:var(--accent-cyan)">FRZ Support Portal</a>
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="font-family:var(--font-display);font-size:10px;letter-spacing:3px;color:var(--text-muted);margin-bottom:12px">FAQ</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+        <details style="border-bottom:1px solid var(--border);padding-bottom:8px">
+          <summary style="color:var(--text-primary);cursor:pointer;padding:4px 0">Why was my account frozen?</summary>
+          <div style="color:var(--text-muted);padding:8px 0 0 8px;line-height:1.6">Your account was temporarily frozen after multiple consecutive wrong password attempts were detected. This is an automatic security measure to protect your account from unauthorized access.</div>
+        </details>
+        <details style="border-bottom:1px solid var(--border);padding-bottom:8px">
+          <summary style="color:var(--text-primary);cursor:pointer;padding:4px 0">When was it frozen?</summary>
+          <div style="color:var(--text-muted);padding:8px 0 0 8px;line-height:1.6">Freeze time is shown above. Your session was locked at that exact moment after the final failed attempt.</div>
+        </details>
+        <details style="border-bottom:1px solid var(--border);padding-bottom:8px">
+          <summary style="color:var(--text-primary);cursor:pointer;padding:4px 0">Where did the freeze happen from?</summary>
+          <div style="color:var(--text-muted);padding:8px 0 0 8px;line-height:1.6">The device info and IP address are shown above. If this was not you, contact FRZ Generations immediately — someone else may have attempted to access your account.</div>
+        </details>
+        <details>
+          <summary style="color:var(--text-primary);cursor:pointer;padding:4px 0">How long does a freeze last?</summary>
+          <div style="color:var(--text-muted);padding:8px 0 0 8px;line-height:1.6">The freeze lasts until manually reviewed by FRZ Generations admins. Reach out via email or WhatsApp and our team will respond within 24-72 hours.</div>
+        </details>
+      </div>
+    </div>
+    <button onclick="freezeLogout()" style="background:rgba(255,82,82,0.1);border:1px solid rgba(255,82,82,0.3);color:var(--accent-red);padding:10px;border-radius:8px;cursor:pointer;font-family:var(--font-display);font-size:11px;letter-spacing:2px;width:100%">← RETURN TO LOGIN</button>
+  </div>
+</div>
+<div id="suspend-screen">
+  <div style="font-size:64px">🚫</div>
   <h2>ACCOUNT SUSPENDED</h2>
-  <p>
-    Dear User,<br><br>
-    Due to some violations towards the Terms and Conditions and Fair Use
-    Policies of Freezy-OS by FRZ Generations, we are noticing you that
-    your Freezy-OS account has been suspended for a review.<br><br>
-    If it is by a mistake on our end we will remove the suspension.
-    If you did not get the account back you can appeal below or contact
-    us — we will connect within 24–72 hours.
-  </p>
-  <div class="sus-appeal">
-    <h3>SUBMIT AN APPEAL</h3>
-    <textarea id="appeal-msg" placeholder="Explain your situation here..."></textarea>
-    <button class="btn-appeal" onclick="submitAppeal()">SUBMIT APPEAL</button>
-  </div>
-  <div class="sus-contacts">
-    📧 frzgenerations@gmail.com<br>
-    📱 WhatsApp: 7012523494
-  </div>
-  <button class="apb dng" style="margin-top:16px" onclick="logout()">Return to Login</button>
+  <p>Your Freezy-OS account has been suspended by FRZ Generations. Contact frzgenerations@gmail.com or WhatsApp 7012523494.</p>
+  <button class="app-btn danger" onclick="logout()">Return to Login</button>
 </div>
 
-<!-- SERVICE WORKER REGISTRATION -->
 <script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/public/sw.js")
-      .then(r => console.log("SW registered:", r.scope))
-      .catch(e => console.warn("SW failed:", e));
-  });
+// ===================================================
+// FREEZY-OS CONFIG  -  FRZ GENERATIONS (c) 2026
+// FIRESTORE: users/{uid} - profile, settings, wallpaper, suspended
+// REALTIME DB: qr_sessions/{code} - QR connect tokens (60s TTL)
+// GOOGLE DRIVE: Software/Users/{username}/
+// ===================================================
+
+// -- Firebase --
+const firebaseConfig = {
+  apiKey:            "AIzaSyCS_uM3Z54Cgw1E_ZEC_Wmfg5_vu1v9Blw",
+  authDomain:        "freezy-os.firebaseapp.com",
+  projectId:         "freezy-os",
+  storageBucket:     "freezy-os.firebasestorage.app",
+  messagingSenderId: "756915684931",
+  appId:             "1:756915684931:web:1377b5538832b84031f6f6",
+  databaseURL:       "https://freezy-os-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+
+// -- Google Drive OAuth --
+const DRIVE_CLIENT_ID   = "756915684931-t8vifm167cf5drd1q05ehg7rtueun1q4.apps.googleusercontent.com";
+const DRIVE_API_KEY     = "AIzaSyA-jL1wVCPkDZDNzKcvvTUHSPuJzo2kh2A";
+const DRIVE_SCOPES      = 'https://www.googleapis.com/auth/drive';
+const DRIVE_FOLDER_ROOT = 'Software/Users';
+
+// -- Search & Weather --
+const SEARCH_API_KEY  = "AIzaSyArmHS_K0thezlka8UcwUeWx4hHeHZ9p-4";
+const SEARCH_CX       = "462c6830bae224f54";
+const WEATHER_API_KEY = "1fbe84bbca0ebbc22fe13cdc3ee8dba2";
+const MAPS_API_KEY    = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjVjZTUyZDEzYTkwZDRmM2U5NDc2ZmQ3OWE3Nzc1OGVlIiwiaCI6Im11cm11cjY0In0=";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyT-rvZChgvBLU3W1SZNBW8O1o7HlEFzGqPH8q-QoSJThm4xJ5PJJ-TGm6g_Ve8rcYb/exec";
+
+// -- Admin --
+const ADMIN_EMAILS = ["frzgenerations@gmail.com", "farazahammed77@gmail.com"];
+const ADMIN_PHONE  = "7012523494";
+
+const isElectron = typeof window.process === 'object' && window.process?.type === 'renderer';
+
+// ===== FIREBASE INIT =====
+let fbApp, db, rtdb;
+try {
+  fbApp = firebase.initializeApp(firebaseConfig);
+  db    = firebase.firestore();
+  rtdb  = firebase.database();
+} catch(e) { console.warn('Firebase init failed:', e); }
+
+// ===== STATE =====
+let userData = null;
+let osSettings = { brightness:100, volume:70, wallpaper:'', lockPassword:'', inactivityTimeout:15 };
+let openWindows = {}, windowZIndex = 100, focusedWindowId = null;
+let notifHistory = [], notifBadgeCount = 0;
+let inactivityTimer = null;
+let dockApps = ['files','calculator','weather','prayer','calendar','music','code','settings'];
+
+// Google Drive state
+let driveInited = false, driveTokenClient = null, driveFolderId = null;
+
+// ===== INIT =====
+function initOS() {
+  const stored = sessionStorage.getItem('freezy_user');
+  if (!stored) {
+    userData = { uid:'demo', name:'Demo User', email:'demo@freezyos.app', photo:'' };
+    notify('info','Demo Mode','Login via index.html to connect your account');
+  } else {
+    try { userData = JSON.parse(stored); } catch(e) { userData = { uid:'demo', name:'Guest', email:'', photo:'' }; }
+  }
+
+  const avatarUrl = userData.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=0d1520&color=00d4ff&size=64`;
+  document.getElementById('tb-avatar').src    = avatarUrl;
+  document.getElementById('menu-avatar').src  = avatarUrl;
+  document.getElementById('menu-name').textContent  = userData.name;
+  document.getElementById('menu-email').textContent = userData.email;
+  document.getElementById('lock-avatar').src  = avatarUrl;
+  document.getElementById('lock-name').textContent  = userData.name;
+
+  if (db && userData.uid !== 'demo') {
+    checkSuspension();
+    listenBlacklist();
+    loadUserSettings();
+  }
+
+  const saved = localStorage.getItem('frz_os_settings');
+  if (saved) { try { osSettings = {...osSettings,...JSON.parse(saved)}; } catch(e){} }
+  applySettings();
+
+  buildDock(); buildDesktopIcons(); buildDrawer();
+  // Apply saved dock position
+  if (osSettings.dockPosition && osSettings.dockPosition !== 'bottom') {
+    _applyDockPosition(osSettings.dockPosition);
+  }
+  startClock(); resetInactivity(); updateConnectionStatus();
+  notify('success','Freezy-OS','Welcome back, ' + userData.name.split(' ')[0] + '!');
 }
 
-// ═══════════════════════════════════════════
-// FREEZY-OS MAIN INIT
-// All logic lives in js/ subfolders.
-// This script only bootstraps the OS.
-// ═══════════════════════════════════════════
-window.addEventListener("load", function () {
+function saveSettings() { localStorage.setItem('frz_os_settings', JSON.stringify(osSettings)); }
 
-  // Safety check — if JS files failed to load show error
-  if (typeof initOS !== "function") {
-    document.body.innerHTML = `
-      <div style="
-        display:flex;flex-direction:column;align-items:center;
-        justify-content:center;height:100vh;background:#020408;
-        color:#e8f4fd;font-family:monospace;text-align:center;padding:20px;gap:16px
-      ">
-        <img src="assets/icons/apps/freezy-os.png"
-          style="width:80px;height:80px;filter:drop-shadow(0 0 20px rgba(0,212,255,0.5))"
-          onerror="this.style.display=\\'none\\'">
-        <div style="font-size:22px;color:#00d4ff;letter-spacing:3px">FREEZY-OS</div>
-        <div style="color:#ff3355;font-size:14px">⚠ JS files not found</div>
-        <div style="color:#7a9ab5;font-size:12px;max-width:400px;line-height:1.7">
-          The <code>js/</code> folder files are missing or failed to load.<br>
-          Make sure you have uploaded the complete project to GitHub.<br><br>
-          Required: <code>js/core/</code> · <code>js/system/</code> ·
-          <code>js/storage/</code> · <code>js/apps/</code> ·
-          <code>js/qr-connect/</code><br>
-          Also required: <code>firebase/firebase-config.js</code><br>
-          Also required: <code>css/main.css</code> and other CSS files
-        </div>
-        <a href="index.html"
-          style="color:#00d4ff;font-size:13px;border:1px solid rgba(0,212,255,0.3);
-          padding:8px 20px;border-radius:8px;text-decoration:none">
-          ← Back to Login
-        </a>
-      </div>`;
+function applySettings() {
+  setBrightness(osSettings.brightness, true);
+  setVolume(osSettings.volume, true);
+  if (osSettings.wallpaper) applyWallpaper(osSettings.wallpaper);
+  const bs = document.getElementById('bright-slider');
+  const vs = document.getElementById('vol-slider');
+  if (bs) bs.value = osSettings.brightness;
+  if (vs) vs.value = osSettings.volume;
+}
+
+// ===== WALLPAPER - FIXED =====
+// FIX: The old code set opacity:0 and never toggled it.
+// Now uses a class 'active' to fade in when a wallpaper is applied.
+function applyWallpaper(url) {
+  const layer = document.getElementById('wallpaper-layer');
+  if (!layer) return;
+  if (!url || !url.trim()) {
+    layer.classList.remove('active');
+    layer.style.backgroundImage = 'none';
+    return;
+  }
+  // Apply directly - don't use img.onload because many hosts block CORS
+  // which prevents onload from firing even though the image renders fine as CSS.
+  layer.style.backgroundImage    = 'url("' + url + '")';
+  layer.style.backgroundSize     = 'cover';
+  layer.style.backgroundPosition = 'center';
+  layer.style.backgroundRepeat   = 'no-repeat';
+  layer.classList.add('active');
+  notify('success', 'Wallpaper', 'Wallpaper applied!');
+  // Save to Firestore
+  if (typeof db !== 'undefined' && db && userData && userData.uid && userData.uid !== 'demo') {
+    db.collection('users').doc(userData.uid).set({ wallpaper: url }, { merge:true }).catch(()=>{});
+  }
+}
+
+function clearWallpaper() {
+  osSettings.wallpaper = '';
+  applyWallpaper('');
+  saveSettings();
+  if (db && userData.uid !== 'demo') {
+    db.collection('users').doc(userData.uid).set({ wallpaper:'' }, { merge:true }).catch(()=>{});
+  }
+  const wu = document.getElementById('wallpaper-url');
+  if (wu) wu.value = '';
+  const prev = document.getElementById('wallpaper-preview');
+  if (prev) { prev.style.backgroundImage = 'none'; prev.textContent = 'Wallpaper preview'; }
+  notify('info','Wallpaper','Wallpaper cleared');
+}
+
+// ===== FIREBASE =====
+function checkSuspension() {
+  db.collection('users').doc(userData.uid).get().then(doc => {
+    if (doc.exists && doc.data().suspended) showSuspended();
+  }).catch(()=>{});
+}
+function listenBlacklist() {
+  rtdb.ref(`frz_blacklist/${userData.uid}`).on('value', snap => {
+    if (snap.exists() && snap.val() === true) showSuspended();
+  });
+}
+function loadUserSettings() {
+  db.collection('users').doc(userData.uid).get().then(doc => {
+    if (doc.exists) {
+      const d = doc.data();
+      if (d.wallpaper) { osSettings.wallpaper = d.wallpaper; applyWallpaper(d.wallpaper); }
+      if (d.osSettings) { osSettings = {...osSettings,...d.osSettings}; applySettings(); }
+    }
+  }).catch(()=>{});
+}
+function saveUserSettings() {
+  saveSettings();
+  if (db && userData.uid !== 'demo') {
+    db.collection('users').doc(userData.uid).set({
+      wallpaper: osSettings.wallpaper,
+      osSettings: osSettings
+    }, { merge:true }).catch(()=>{});
+  }
+}
+function showSuspended() { document.getElementById('suspend-screen').style.display = 'flex'; }
+function logout() {
+  sessionStorage.removeItem('freezy_user');
+  try { firebase.auth().signOut(); } catch(e) {}
+  window.location.href = 'index.html';
+}
+
+// ===== CLOCK =====
+function startClock() {
+  function tick() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    const tbTime = document.getElementById('tb-time');
+    const tbDate = document.getElementById('tb-date');
+    if (tbTime) tbTime.textContent = `${h}:${m}:${s}`;
+    const days   = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    if (tbDate) tbDate.textContent = `${days[now.getDay()]} ${months[now.getMonth()]} ${now.getDate()}`;
+    if (document.getElementById('lock-screen').classList.contains('visible')) {
+      document.getElementById('lock-time').textContent = `${h}:${m}`;
+      document.getElementById('lock-date').textContent = `${days[now.getDay()]} • ${months[now.getMonth()]} ${now.getDate()} • ${now.getFullYear()}`;
+    }
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// ===== INACTIVITY =====
+function resetInactivity() {
+  clearTimeout(inactivityTimer);
+  const mins = osSettings.inactivityTimeout || 15;
+  if (!mins) return;
+  inactivityTimer = setTimeout(() => lockScreen(), mins * 60 * 1000);
+}
+['mousemove','keydown','click','touchstart','touchmove'].forEach(ev =>
+  document.addEventListener(ev, resetInactivity, { passive:true })
+);
+
+// ===== LOCK SCREEN - with attempt tracking & freeze system =====
+let _lockAttempts = 0;       // total wrong attempts this session
+let _lockBlocked  = false;   // input blocked (cooldown active)
+let _lockCooldownEnd = 0;    // timestamp when cooldown ends
+let _lockCooldownTimer = null;
+
+function lockScreen() {
+  _lockAttempts = 0;
+  _lockBlocked  = false;
+  clearInterval(_lockCooldownTimer);
+  const lp = document.getElementById('lock-pass');
+  const lm = document.getElementById('lock-msg');
+  const lt = document.getElementById('lock-timer-msg');
+  if (lp) { lp.value = ''; lp.disabled = false; lp.style.borderColor = ''; }
+  if (lm) lm.textContent = '';
+  if (lt) lt.textContent = '';
+  document.getElementById('lock-screen').classList.add('visible');
+  setTimeout(() => lp?.focus(), 300);
+}
+
+function unlockCheck(e) { if (e.key === 'Enter') unlockByPass(); }
+
+function unlockByPass() {
+  if (_lockBlocked) return;
+  const lp   = document.getElementById('lock-pass');
+  const lm   = document.getElementById('lock-msg');
+  const lt   = document.getElementById('lock-timer-msg');
+  const pass = lp.value;
+
+  // No password set - free unlock
+  if (!osSettings.lockPassword) {
+    _doUnlock(); return;
+  }
+  // Correct password
+  if (pass === osSettings.lockPassword) {
+    _lockAttempts = 0;
+    _doUnlock(); return;
+  }
+
+  // -- Wrong password --
+  _lockAttempts++;
+  lp.value = '';
+  lp.style.borderColor = 'var(--accent-red)';
+  setTimeout(() => { if (lp) lp.style.borderColor = ''; }, 600);
+
+  // Phase 1 - first 5 attempts: 90-second cooldown
+  if (_lockAttempts === 5) {
+    lm.textContent = '5 wrong attempts - wait 90 seconds';
+    _startCooldown(90, lt, lp);
+    return;
+  }
+  // Phase 2 - attempts 6-8: 5-minute block
+  if (_lockAttempts === 8) {
+    lm.textContent = 'Too many attempts - blocked for 5 minutes';
+    _startCooldown(300, lt, lp);
+    return;
+  }
+  // Phase 3 - attempt 9-10: final warning
+  if (_lockAttempts === 9 || _lockAttempts === 10) {
+    lm.textContent = '⚠️ Warning: next wrong input may freeze your account';
+    lt.textContent = '';
+    return;
+  }
+  // Phase 4 - attempt 11+: FREEZE
+  if (_lockAttempts >= 11) {
+    _triggerFreeze();
     return;
   }
 
-  // All good — start the OS
-  initOS();
+  const remaining = 5 - _lockAttempts;
+  lm.textContent = remaining > 0
+    ? `Wrong password - ${remaining} attempt${remaining !== 1 ? 's' : ''} before cooldown`
+    : 'Wrong password';
+}
+
+function _doUnlock() {
+  document.getElementById('lock-screen').classList.remove('visible');
+  const lp = document.getElementById('lock-pass');
+  const lm = document.getElementById('lock-msg');
+  const lt = document.getElementById('lock-timer-msg');
+  if (lp) { lp.value = ''; lp.disabled = false; }
+  if (lm) lm.textContent = '';
+  if (lt) lt.textContent = '';
+  _lockAttempts = 0; _lockBlocked = false;
+  clearInterval(_lockCooldownTimer);
+}
+
+function _startCooldown(seconds, timerEl, inputEl) {
+  _lockBlocked = true;
+  _lockCooldownEnd = Date.now() + seconds * 1000;
+  if (inputEl) inputEl.disabled = true;
+  clearInterval(_lockCooldownTimer);
+  _lockCooldownTimer = setInterval(() => {
+    const remaining = Math.ceil((_lockCooldownEnd - Date.now()) / 1000);
+    if (remaining <= 0) {
+      clearInterval(_lockCooldownTimer);
+      _lockBlocked = false;
+      if (inputEl) { inputEl.disabled = false; inputEl.focus(); }
+      if (timerEl) timerEl.textContent = 'You may try again now';
+      const lm = document.getElementById('lock-msg');
+      if (lm) lm.textContent = '';
+      return;
+    }
+    const m = Math.floor(remaining / 60), s = remaining % 60;
+    if (timerEl) timerEl.textContent = `Try again in ${m > 0 ? m+'m ' : ''}${s}s`;
+  }, 500);
+}
+
+function _triggerFreeze() {
+  // Populate freeze screen details
+  const now = new Date();
+  const fzTime   = document.getElementById('fz-time');
+  const fzDevice = document.getElementById('fz-device');
+  const fzIp     = document.getElementById('fz-ip');
+  if (fzTime)   fzTime.textContent   = now.toLocaleString();
+  if (fzDevice) fzDevice.textContent = navigator.userAgent.split(')')[0].replace('(','').trim().substring(0,60);
+  // Fetch IP
+  fetch('https://api.ipify.org?format=json')
+    .then(r => r.json())
+    .then(d => { if (fzIp) fzIp.textContent = d.ip || 'Unknown'; })
+    .catch(()  => { if (fzIp) fzIp.textContent = 'Unable to fetch'; });
+
+  // Send alert to Apps Script
+  _reportFreezeToScript(now);
+
+  // Show freeze screen, hide lock screen
+  document.getElementById('lock-screen').classList.remove('visible');
+  document.getElementById('freeze-screen').style.display = 'block';
+}
+
+function _reportFreezeToScript(now) {
+  if (!APPS_SCRIPT_URL) return;
+  fetch('https://api.ipify.org?format=json')
+    .then(r => r.json())
+    .then(d => {
+      return fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action:    'devtools_violation',
+          email:     userData?.email || 'Unknown',
+          name:      userData?.name  || 'Unknown',
+          uid:       userData?.uid   || 'Unknown',
+          ip:        d.ip || 'Unknown',
+          userAgent: navigator.userAgent,
+          reason:    'Too many wrong lock screen password attempts',
+          timestamp: now.toISOString()
+        })
+      });
+    })
+    .catch(() => {});
+}
+
+function freezeLogout() {
+  document.getElementById('freeze-screen').style.display = 'none';
+  logout();
+}
+
+// ===== VOLUME & BRIGHTNESS =====
+// Web Audio API context for volume control
+let _audioCtx = null, _gainNode = null;
+
+function _getGain() {
+  if (!_audioCtx) {
+    try {
+      _audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+      _gainNode  = _audioCtx.createGain();
+      _gainNode.connect(_audioCtx.destination);
+    } catch(e) { return null; }
+  }
+  return _gainNode;
+}
+
+function setVolume(val, silent) {
+  const v = parseInt(val);
+  osSettings.volume = v;
+  const lbl = document.getElementById('vol-label');
+  const sld = document.getElementById('vol-slider');
+  if (!silent) { if(lbl) lbl.textContent = v+'%'; if(sld) sld.value = v; saveSettings(); }
+
+  // Apply to ALL playing <audio> and <video> elements on the page
+  const fraction = v / 100;
+  document.querySelectorAll('audio, video').forEach(el => { el.volume = fraction; });
+
+  // Apply via gainNode for any future AudioContext sources
+  const gain = _getGain();
+  if (gain) gain.gain.setTargetAtTime(fraction, _audioCtx.currentTime, 0.01);
+
+  // Patch musicAudio directly (it is a plain Audio element)
+  if (typeof musicAudio !== 'undefined' && musicAudio) musicAudio.volume = fraction;
+
+  if (isElectron && window.electron) window.electron.ipcRenderer.send('set-volume', v);
+}
+function setBrightness(val, silent) {
+  const v = parseInt(val);
+  osSettings.brightness = v;
+  const lbl = document.getElementById('bright-label');
+  const sld = document.getElementById('bright-slider');
+  if (!silent) { if(lbl) lbl.textContent = v+'%'; if(sld) sld.value = v; saveSettings(); }
+  if (!isElectron) {
+    const darkness = (100 - v) / 100 * 0.85;
+    document.getElementById('brightness-overlay').style.background = `rgba(0,0,0,${darkness})`;
+  } else if (window.electron) {
+    window.electron.ipcRenderer.send('set-brightness', v);
+  }
+}
+
+// ===== NOTIFICATIONS =====
+function notify(type, title, msg) {
+  const id = 'n_' + Date.now();
+  const icons = { info:'ℹ️', success:'✅', warning:'⚠️', error:'❌' };
+  const el = document.createElement('div');
+  el.className = `notif ${type}`;
+  el.id = id;
+  el.innerHTML = `<div class="notif-icon">${icons[type]||'ℹ️'}</div><div><div class="notif-title">${title}</div><div class="notif-msg">${msg}</div></div>`;
+  el.onclick = () => dismissNotif(id);
+  document.getElementById('notif-container').appendChild(el);
+  notifHistory.unshift({ type, title, msg, time: new Date().toLocaleTimeString() });
+  notifBadgeCount++;
+  const badge = document.getElementById('notif-badge');
+  if (badge) { badge.style.display = 'flex'; badge.textContent = Math.min(notifBadgeCount, 99); }
+  updateNotifCenter();
+  setTimeout(() => dismissNotif(id), 4000);
+}
+function dismissNotif(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('out');
+  setTimeout(() => el?.remove(), 250);
+}
+function toggleNotifCenter() {
+  const el = document.getElementById('notif-center');
+  const isOpen = el.style.display !== 'none';
+  closeAllPopups();
+  if (!isOpen) { el.style.display = 'block'; notifBadgeCount = 0; document.getElementById('notif-badge').style.display = 'none'; }
+}
+function updateNotifCenter() {
+  const h = document.getElementById('notif-history');
+  if (!h) return;
+  if (!notifHistory.length) { h.innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:16px">No notifications</div>'; return; }
+  h.innerHTML = notifHistory.slice(0,20).map(n => `<div class="popup-item" style="flex-direction:column;align-items:flex-start"><div style="font-weight:600;font-size:12px">${n.title}</div><div style="font-size:11px;color:var(--text-muted)">${n.msg} • ${n.time}</div></div>`).join('');
+}
+function updateConnectionStatus() {
+  const btn = document.getElementById('conn-status');
+  if (btn) { btn.textContent = navigator.onLine ? '📶' : '📵'; btn.title = navigator.onLine ? 'Online' : 'Offline'; }
+}
+window.addEventListener('online', updateConnectionStatus);
+window.addEventListener('offline', updateConnectionStatus);
+
+// ===== POPUPS =====
+function togglePopup(id) {
+  const el = document.getElementById(id);
+  const isOpen = el.style.display !== 'none';
+  closeAllPopups();
+  if (!isOpen) el.style.display = 'block';
+}
+function closeAllPopups() {
+  ['vol-popup','bright-popup','user-menu','notif-center'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.popup') && !e.target.closest('.tb-btn') && !e.target.closest('#tb-user')) closeAllPopups();
+  if (!e.target.closest('.ctx-menu')) document.getElementById('ctx-menu').style.display = 'none';
+});
+
+// ===== CONTEXT MENU =====
+function showCtxMenu(x, y, items) {
+  const m = document.getElementById('ctx-menu');
+  m.innerHTML = items.map(item => item === '---' ? '<div class="ctx-sep"></div>' : `<div class="ctx-item ${item.danger?'danger':''}" onclick="${item.action}">${item.icon||''} ${item.label}</div>`).join('');
+  m.style.display = 'block';
+  m.style.left = Math.min(x, window.innerWidth - 200) + 'px';
+  m.style.top  = Math.min(y, window.innerHeight - 200) + 'px';
+}
+document.getElementById('desktop').addEventListener('contextmenu', e => {
+  e.preventDefault();
+  showCtxMenu(e.clientX, e.clientY, [
+    { label:'Change Wallpaper', icon:'🖼️', action:"openApp('settings')" },
+    { label:'App Drawer',       icon:'📱', action:"toggleDrawer()" },
+    '---',
+    { label:'Refresh',          icon:'🔄', action:"location.reload()" },
+    { label:'About Freezy-OS',  icon:'ℹ️', action:"showAbout()" }
+  ]);
+});
+
+function showAbout() {
+  openWindow('about','About Freezy-OS','ℹ️',`<div class="app-content" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;text-align:center">
+    <img src="https://frzimage.xo.je/images/freezy-os.png" style="width:80px;height:80px;filter:drop-shadow(0 0 20px rgba(0,212,255,0.5))">
+    <div style="font-family:var(--font-display);font-size:clamp(16px,3vw,20px);color:var(--accent-cyan);letter-spacing:3px">FREEZY-OS</div>
+    <div style="font-size:12px;color:var(--text-muted)">Version 1.0.0 • Build 2026</div>
+    <div style="font-size:clamp(12px,2vw,13px);color:var(--text-secondary);max-width:300px;line-height:1.6">A browser-based desktop OS by FRZ Generations. Free Tools. Unlimited Possibilities.</div>
+    <div style="font-size:11px;color:var(--text-muted)">Designed and Developed under FRZ Generations (c) 2026</div>
+  </div>`,{w:400,h:360});
+}
+
+// ===== APP DEFINITIONS =====
+const ALL_APPS = [
+  {id:'settings',name:'Settings',icon:'assets/icons/apps/settings.png',category:'System'},
+  {id:'files',name:'File Manager',icon:'assets/icons/apps/files.png',category:'System'},
+  {id:'howto',name:'How-To Guide',icon:'assets/icons/apps/howto.png',category:'System'},
+  {id:'calculator',name:'Calculator',icon:'assets/icons/apps/calculator.png',category:'Tools'},
+  {id:'converter',name:'Unit Converter',icon:'assets/icons/apps/converter.png',category:'Tools'},
+  {id:'qrconnect',name:'QR Connect',icon:'assets/icons/apps/qrconnect.png',category:'Tools'},
+  {id:'calendar',name:'Calendar',icon:'assets/icons/apps/calendar.png',category:'Tools'},
+  {id:'quiz',name:'Quiz Generator',icon:'assets/icons/apps/quiz.png',category:'Study',url:'https://quizgenerator-frz.netlify.app'},
+  {id:'flashcard',name:'Flashcard Gen',icon:'assets/icons/apps/flashcard.png',category:'Study',url:'https://flashcardgenerator-frz.netlify.app'},
+  {id:'qpaper',name:'Question Paper',icon:'assets/icons/apps/quiz.png',category:'Study',url:'https://questionpapergenerator-frz.netlify.app'},
+  {id:'answerkey',name:'Answer Key',icon:'assets/icons/apps/quiz.png',category:'Study',url:'https://answerkeygenerstor-frz.netlify.app'},
+  {id:'shortnote',name:'Short Notes',icon:'assets/icons/apps/flashcard.png',category:'Study',url:'https://shortnotecreator-frz.netlify.app'},
+  {id:'revnote',name:'Revision Notes',icon:'assets/icons/apps/library.png',category:'Study',url:'https://revisionnotegenerstor-frz.netlify.app'},
+  {id:'studytimer',name:'Study Timer',icon:'assets/icons/apps/studytimer.png',category:'Study',url:'https://studytimer-frz.netlify.app'},
+  {id:'word',name:'Word Editor',icon:'assets/icons/apps/word.png',category:'Office'},
+  {id:'whiteboard',name:'Whiteboard',icon:'assets/icons/apps/whiteboard.png',category:'Office'},
+  {id:'music',name:'Music Player',icon:'assets/icons/apps/music.png',category:'Media'},
+  {id:'imagehost',name:'Image Host',icon:'assets/icons/apps/imagehost.png',category:'Media',url:'https://frzimage.xo.je'},
+  {id:'pdfhost',name:'PDF Host',icon:'assets/icons/apps/pdftools.png',category:'Media',url:'https://frzpdf.xo.je'},
+  {id:'mediahost',name:'Media Host',icon:'assets/icons/apps/imagehost.png',category:'Media',url:'https://frzmedia.xo.je'},
+  {id:'code',name:'Code Editor',icon:'assets/icons/apps/code.png',category:'Tools'},
+  {id:'browser',name:'Web Browser',icon:'assets/icons/apps/browser.png',category:'Web'},
+  {id:'search',name:'Search',icon:'assets/icons/apps/search.png',category:'Web'},
+  {id:'urlshort',name:'URL Shortener',icon:'assets/icons/apps/qrconnect.png',category:'Web',url:'https://turl.xo.je'},
+  {id:'qrgen',name:'QR Generator',icon:'assets/icons/apps/qrconnect.png',category:'Web',url:'https://qrfrz.xo.je'},
+  {id:'whatsapp',name:'WA Converter',icon:'assets/icons/apps/community.png',category:'Web',url:'https://wame-frz.netlify.app'},
+  {id:'prayer',name:'Prayer Times',icon:'assets/icons/apps/prayer.png',category:'Religious'},
+  {id:'hijri',name:'Hijri Calendar',icon:'assets/icons/apps/hijri.png',category:'Religious'},
+  {id:'religiouscal',name:'Religious Cals',icon:'assets/icons/apps/religiouscal.png',category:'Religious'},
+  {id:'weather',name:'Weather',icon:'assets/icons/apps/weather.png',category:'Maps & Weather'},
+  {id:'maps',name:'Maps',icon:'assets/icons/apps/maps.png',category:'Maps & Weather'},
+  {id:'pdfsplit',name:'PDF Splitter',icon:'assets/icons/apps/pdftools.png',category:'PDF Tools',url:'https://pdfsplitter-frz.netlify.app'},
+  {id:'pdfmerge',name:'PDF Merger',icon:'assets/icons/apps/pdftools.png',category:'PDF Tools',url:'https://pdfmerger-frz.netlify.app'},
+  {id:'community',name:'Community Tools',icon:'assets/icons/apps/community.png',category:'Community'},
+  {id:'library',name:'Public Library',icon:'assets/icons/apps/library.png',category:'Community'},
+];
+const CATEGORIES = ['System','Tools','Study','Office','Media','Web','Religious','Maps & Weather','PDF Tools','Community'];
+
+
+function appIconHTML(icon, size) {
+  if (!icon) return "?";
+  if (icon.startsWith("assets/") || icon.startsWith("http")) {
+    return '<img src="' + icon + '" class="app-icon-img" style="width:' + size + 'px;height:' + size + 'px" onerror="this.style.display=\'none\'" loading="lazy">';
+  }
+  return icon;
+}
+function buildDrawer() {
+  const c = document.getElementById('drawer-categories');
+  c.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const apps = ALL_APPS.filter(a => a.category === cat);
+    if (!apps.length) return;
+    const div = document.createElement('div');
+    div.className = 'drawer-category';
+    div.innerHTML = `<div class="drawer-cat-title">${cat}</div><div class="drawer-apps">${apps.map(a=>`<div class="drawer-app" onclick="openApp('${a.id}')" data-name="${a.name.toLowerCase()}"><div class="dapp-icon">${appIconHTML(a.icon,32)}</div><div class="dapp-name">${a.name}</div></div>`).join('')}</div>`;
+    c.appendChild(div);
+  });
+}
+function filterDrawerApps(q) {
+  document.querySelectorAll('.drawer-app').forEach(a => {
+    a.style.display = (!q || a.dataset.name.includes(q.toLowerCase())) ? '' : 'none';
+  });
+}
+function toggleDrawer() { document.getElementById('app-drawer').classList.toggle('open'); }
+
+// ===== DESKTOP ICONS =====
+const DESK_ICONS = ['files','calculator','weather','prayer','music','code','browser','settings'];
+function buildDesktopIcons() {
+  const c = document.getElementById('desktop-icons');
+  c.innerHTML = '';
+  DESK_ICONS.forEach(id => {
+    const app = ALL_APPS.find(a => a.id === id);
+    if (!app) return;
+    const div = document.createElement('div');
+    div.className = 'desk-icon';
+    div.innerHTML = `<div class="icon-img">${appIconHTML(app.icon,40)}</div><div class="icon-label">${app.name}</div>`;
+    div.ondblclick = () => openApp(app.id);
+    div.onclick    = () => openApp(app.id);
+    div.oncontextmenu = e => { e.preventDefault(); showCtxMenu(e.clientX, e.clientY, [
+      {label:'Open',icon:'▶️',action:`openApp('${app.id}')`},
+      {label:'Pin to Dock',icon:'📌',action:`pinToDock('${app.id}')`},
+      '---',
+      {label:'Remove',icon:'✖️',action:`removeDesktopIcon('${app.id}')`,danger:true}
+    ]); };
+    c.appendChild(div);
+  });
+}
+function pinToDock(id) {
+  if (!dockApps.includes(id)) { dockApps.push(id); buildDock(); notify('success','Pinned','App added to dock'); }
+}
+function removeDesktopIcon(id) {
+  const i = DESK_ICONS.indexOf(id); if (i > -1) { DESK_ICONS.splice(i,1); buildDesktopIcons(); }
+}
+
+// ===== DOCK =====
+let _dockDragSrc = null;
+function buildDock() {
+  const dock = document.getElementById('dock');
+  dock.innerHTML = '';
+  dockApps.forEach(id => {
+    const app = ALL_APPS.find(a => a.id === id);
+    if (!app) return;
+    const div = document.createElement('div');
+    div.className = 'dock-icon';
+    div.id = `dock_${id}`;
+    div.setAttribute('draggable', 'true');
+    div.dataset.appId = id;
+    div.innerHTML = `${appIconHTML(app.icon,36)}<span class="icon-tooltip">${app.name}</span>`;
+    div.onclick = () => openApp(id);
+    // Right-click to remove from dock
+    div.oncontextmenu = e => { e.preventDefault(); showCtxMenu(e.clientX, e.clientY, [
+      {label:'Open',icon:'▶️',action:`openApp('${id}')`},
+      {label:'Remove from Dock',icon:'✖️',action:`removeFromDock('${id}')`,danger:true}
+    ]); };
+    // Drag-to-reorder
+    div.addEventListener('dragstart', e => {
+      _dockDragSrc = id;
+      e.dataTransfer.effectAllowed = 'move';
+      div.style.opacity = '0.4';
+    });
+    div.addEventListener('dragend', () => { div.style.opacity = '1'; _dockDragSrc = null; });
+    div.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+    div.addEventListener('dragenter', e => { if (_dockDragSrc && _dockDragSrc !== id) div.style.background = 'rgba(0,212,255,0.2)'; });
+    div.addEventListener('dragleave', () => { div.style.background = ''; });
+    div.addEventListener('drop', e => {
+      e.preventDefault();
+      div.style.background = '';
+      if (!_dockDragSrc || _dockDragSrc === id) return;
+      const fromIdx = dockApps.indexOf(_dockDragSrc);
+      const toIdx   = dockApps.indexOf(id);
+      if (fromIdx < 0 || toIdx < 0) return;
+      dockApps.splice(fromIdx, 1);
+      dockApps.splice(toIdx, 0, _dockDragSrc);
+      buildDock();
+    });
+    dock.appendChild(div);
+  });
+  const sep = document.createElement('div'); sep.className = 'dock-sep'; dock.appendChild(sep);
+  const add = document.createElement('div'); add.className = 'dock-add'; add.innerHTML = '+'; add.title = 'Add app'; add.onclick = toggleDrawer; dock.appendChild(add);
+}
+function removeFromDock(id) {
+  const i = dockApps.indexOf(id); if (i > -1) { dockApps.splice(i,1); buildDock(); }
+}
+function setDockActive(id) {
+  document.querySelectorAll('.dock-icon').forEach(d => d.classList.remove('active'));
+  const el = document.getElementById(`dock_${id}`);
+  if (el) el.classList.add('active');
+}
+
+// ===== WINDOW MANAGER =====
+function openApp(id) {
+  document.getElementById('app-drawer').classList.remove('open');
+  if (openWindows[id]) {
+    const win = document.getElementById(`win_${id}`);
+    if (win) { win.classList.remove('minimized'); focusWindow(id); return; }
+  }
+  const app = ALL_APPS.find(a => a.id === id);
+  if (!app) return;
+  if (app.url) { openIframeApp(app); return; }
+  const builders = {
+    calculator:buildCalculator, settings:buildSettings, weather:buildWeather,
+    prayer:buildPrayer, calendar:buildCalendar, music:buildMusic, maps:buildMaps,
+    files:buildFileManager, code:buildCodeEditor, word:buildWord, whiteboard:buildWhiteboard,
+    howto:buildHowTo, search:buildSearch, browser:buildBrowser, qrconnect:buildQRConnect,
+    converter:buildConverter, hijri:buildHijri, religiouscal:buildReligiousCal,
+    community:buildCommunity, library:buildLibrary,
+  };
+  const builder = builders[id];
+  const content = builder ? builder() : `<div class="app-content" style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted)">App coming soon</div>`;
+  const sizes = {
+    calculator:{w:300,h:460},settings:{w:660,h:540},weather:{w:480,h:480},
+    prayer:{w:360,h:500},calendar:{w:380,h:400},music:{w:560,h:460},
+    maps:{w:660,h:540},files:{w:720,h:540},code:{w:740,h:560},
+    word:{w:700,h:560},whiteboard:{w:740,h:560},howto:{w:600,h:520},
+    search:{w:620,h:520},browser:{w:740,h:560},qrconnect:{w:380,h:600},
+    converter:{w:420,h:400},hijri:{w:380,h:420},religiouscal:{w:520,h:500},
+    community:{w:600,h:520},library:{w:700,h:520},
+  };
+  openWindow(id, app.name, app.icon, content, sizes[id]||{w:600,h:440});
+}
+
+function openIframeApp(app) {
+  let url = app.url;
+  if (!url.startsWith('http')) url = 'https://' + url;
+  const content = `<div style="height:100%;display:flex;flex-direction:column">
+    <div class="browser-bar">
+      <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${url}</span>
+      <button class="app-btn" style="padding:4px 10px;font-size:11px;flex-shrink:0" onclick="window.open('${url}','_blank')">↗ Open Tab</button>
+    </div>
+    <iframe src="${url}" style="flex:1;border:none;width:100%;height:100%" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-top-navigation" allow="camera;microphone;geolocation" loading="lazy"></iframe>
+  </div>`;
+  openWindow(app.id, app.name, app.icon, content, {w:900,h:640});
+}
+
+function openWindow(id, title, icon, content, size) {
+  const existing = document.getElementById(`win_${id}`);
+  if (existing) existing.remove();
+  const isTV     = window.innerWidth >= 1920;
+  const isMobile = window.innerWidth <= 768;
+  const w = isMobile ? window.innerWidth : isTV ? Math.min(size.w * 1.3, window.innerWidth - 60) : Math.min(size.w || 580, window.innerWidth - 20);
+  const h = isMobile ? window.innerHeight - 48 - 76 : isTV ? Math.min(size.h * 1.25, window.innerHeight - 140) : Math.min(size.h || 420, window.innerHeight - 120);
+  const x = isMobile ? 0 : Math.max(20, (window.innerWidth - w) / 2 + Math.random() * 40 - 20);
+  const y = isMobile ? 48 : isTV ? 80 : Math.max(56, 64 + Math.random() * 30);
+  const win = document.createElement('div');
+  win.className = 'window';
+  win.id = `win_${id}`;
+  win.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;z-index:${++windowZIndex}`;
+  win.innerHTML = `
+    <div class="win-titlebar" id="tb_${id}">
+      <span class="win-icon">${appIconHTML(icon,16)}</span>
+      <span class="win-title">${title.toUpperCase()}</span>
+      <div class="win-controls">
+        <button class="wbtn minimize" onclick="minimizeWindow('${id}')"></button>
+        <button class="wbtn maximize" onclick="toggleMaximize('${id}')"></button>
+        <button class="wbtn close" onclick="closeWindow('${id}')"></button>
+      </div>
+    </div>
+    <div class="win-body">${content}</div>
+    <div class="win-resize" id="resize_${id}"></div>`;
+  document.getElementById('windows').appendChild(win);
+  openWindows[id] = true;
+  focusWindow(id);
+  setDockActive(id);
+  document.getElementById('taskbar-appname').textContent = title.toUpperCase();
+  makeDraggable(win, document.getElementById(`tb_${id}`), id);
+  makeResizable(win, document.getElementById(`resize_${id}`));
+  win.addEventListener('mousedown', () => focusWindow(id));
+  win.addEventListener('touchstart', () => focusWindow(id), {passive:true});
+  setTimeout(() => initAppAfterRender(id), 100);
+}
+
+function focusWindow(id) {
+  if (focusedWindowId) { const p = document.getElementById(`win_${focusedWindowId}`); if (p) p.classList.remove('active'); }
+  focusedWindowId = id;
+  const win = document.getElementById(`win_${id}`);
+  if (win) { win.classList.add('active'); win.style.zIndex = ++windowZIndex; }
+  const app = ALL_APPS.find(a => a.id === id);
+  if (app) document.getElementById('taskbar-appname').textContent = app.name.toUpperCase();
+  setDockActive(id);
+}
+function minimizeWindow(id) { const win = document.getElementById(`win_${id}`); if (win) win.classList.toggle('minimized'); }
+function toggleMaximize(id) {
+  const win = document.getElementById(`win_${id}`);
+  if (!win) return;
+  if (win.classList.contains('maximized')) {
+    win.classList.remove('maximized');
+    if (win._prev) { win.style.left=win._prev.left; win.style.top=win._prev.top; win.style.width=win._prev.width; win.style.height=win._prev.height; }
+  } else {
+    win._prev = { left:win.style.left, top:win.style.top, width:win.style.width, height:win.style.height };
+    win.classList.add('maximized');
+  }
+  setTimeout(() => initAppAfterRender(id), 50);
+}
+function closeWindow(id) {
+  const win = document.getElementById(`win_${id}`);
+  if (win) { win.style.animation = 'winClose 0.15s ease forwards'; setTimeout(()=>win?.remove(), 140); }
+  delete openWindows[id];
+  if (focusedWindowId === id) { focusedWindowId = null; document.getElementById('taskbar-appname').textContent = 'FREEZY-OS'; }
+  const di = document.getElementById(`dock_${id}`);
+  if (di) di.classList.remove('active');
+  // Stop QR scanner if QR Connect was closed
+  if (id === 'qrconnect') stopQRScanner();
+}
+function minimizeAll() { Object.keys(openWindows).forEach(id => { const w = document.getElementById(`win_${id}`); if (w) w.classList.add('minimized'); }); }
+
+// ===== DRAG & RESIZE =====
+function makeDraggable(win, handle, id) {
+  let dragging = false, ox = 0, oy = 0;
+  handle.addEventListener('mousedown', e => {
+    if (e.target.closest('.win-controls')) return;
+    dragging = true; ox = e.clientX - win.offsetLeft; oy = e.clientY - win.offsetTop;
+    win.classList.remove('maximized'); focusWindow(id);
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    win.style.left = Math.max(0, e.clientX - ox) + 'px';
+    win.style.top  = Math.max(48, e.clientY - oy) + 'px';
+  });
+  document.addEventListener('mouseup', () => dragging = false);
+  handle.addEventListener('touchstart', e => {
+    if (e.target.closest('.win-controls')) return;
+    const t = e.touches[0]; dragging = true; ox = t.clientX - win.offsetLeft; oy = t.clientY - win.offsetTop;
+    focusWindow(id);
+  }, {passive:true});
+  handle.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    const t = e.touches[0];
+    win.style.left = Math.max(0, t.clientX - ox) + 'px';
+    win.style.top  = Math.max(48, t.clientY - oy) + 'px';
+  }, {passive:true});
+  handle.addEventListener('touchend', () => dragging = false);
+}
+function makeResizable(win, handle) {
+  let resizing = false, sw = 0, sh = 0, sx = 0, sy = 0;
+  handle.addEventListener('mousedown', e => {
+    e.stopPropagation(); resizing = true;
+    sw = win.offsetWidth; sh = win.offsetHeight; sx = e.clientX; sy = e.clientY;
+  });
+  document.addEventListener('mousemove', e => {
+    if (!resizing) return;
+    win.style.width  = Math.max(320, sw + e.clientX - sx) + 'px';
+    win.style.height = Math.max(240, sh + e.clientY - sy) + 'px';
+  });
+  document.addEventListener('mouseup', () => resizing = false);
+}
+
+// ===== KEYBOARD SHORTCUTS =====
+document.addEventListener('keydown', e => {
+  if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key)) || (e.ctrlKey && e.key === 'u')) { e.preventDefault(); return; }
+  if ((e.key === 'Meta' || e.key === 'OS') && !e.ctrlKey) { e.preventDefault(); toggleDrawer(); return; }
+  if (e.ctrlKey && e.key === 'd')                { e.preventDefault(); minimizeAll(); return; }
+  if (e.ctrlKey && e.shiftKey && e.key === 'M')  { e.preventDefault(); openApp('music'); return; }
+  if (e.ctrlKey && e.shiftKey && e.key === 'F')  { e.preventDefault(); openApp('files'); return; }
+  if (e.ctrlKey && e.shiftKey && e.key === 'S')  { e.preventDefault(); openApp('settings'); return; }
+  if (e.ctrlKey && e.shiftKey && e.key === 'T')  { e.preventDefault(); openApp('browser'); return; }
+  if (e.ctrlKey && e.key === 'w')                { e.preventDefault(); if (focusedWindowId) closeWindow(focusedWindowId); return; }
+  if (e.key === 'F11')                           { e.preventDefault(); if (focusedWindowId) toggleMaximize(focusedWindowId); }
+});
+
+// ===== APP BUILDERS =====
+function buildCalculator() {
+  return `<div class="app-content">
+    <div class="calc-display"><div class="calc-expr" id="calc-expr"></div><div class="calc-val" id="calc-val">0</div></div>
+    <div class="calc-grid">${[['C','(',')','÷'],['7','8','9','×'],['4','5','6','−'],['1','2','3','+'],[' ','0','.','=']].map(row=>row.map(k=>{const cls=k==='='?'eq':['÷','×','−','+'].includes(k)?'op':['C','(',')'].includes(k)?'fn':'';return `<button class="calc-btn ${cls}" onclick="calcPress('${k}')">${k||'&nbsp;'}</button>`;}).join('')).join('')}</div>
+    <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-top:8px" id="calc-hist"></div>
+  </div>`;
+}
+let calcExpr='', calcHistory=[];
+function calcPress(k) {
+  const expr=document.getElementById('calc-expr'), val=document.getElementById('calc-val'), hist=document.getElementById('calc-hist');
+  if (!expr||!val) return;
+  if (k==='C') { calcExpr=''; val.textContent='0'; expr.textContent=''; return; }
+  if (k===' ') return;
+  if (k==='=') {
+    try { const safe=calcExpr.replace(/÷/g,'/').replace(/×/g,'*').replace(/−/g,'-'); const res=Function('"use strict";return('+safe+')')(); calcHistory.unshift(calcExpr+' = '+res); expr.textContent=calcExpr+' ='; val.textContent=res; calcExpr=String(res); if(hist)hist.innerHTML=calcHistory.slice(0,5).map(h=>`<div>${h}</div>`).join(''); } catch(e) { val.textContent='Error'; }
+    return;
+  }
+  calcExpr+=k; val.textContent=calcExpr; expr.textContent='';
+}
+
+function buildConverter() {
+  return `<div class="app-content">
+    <div class="app-label">Category</div>
+    <select class="app-input" id="conv-cat" onchange="updateConvUnits()"><option>Length</option><option>Weight</option><option>Temperature</option><option>Speed</option><option>Data</option><option>Time</option></select>
+    <div class="convert-wrap" style="margin-top:12px">
+      <div style="flex:1"><div class="app-label">From</div><select class="app-input" id="conv-from" onchange="doConvert()"></select></div>
+      <button class="app-btn" onclick="swapConv()">⇄</button>
+      <div style="flex:1"><div class="app-label">To</div><select class="app-input" id="conv-to" onchange="doConvert()"></select></div>
+    </div>
+    <div style="margin-top:12px"><div class="app-label">Value</div><input class="app-input" id="conv-val" type="number" value="1" oninput="doConvert()"></div>
+    <div class="convert-result" id="conv-result">-</div>
+  </div>`;
+}
+const CONV_UNITS={Length:{m:1,km:0.001,cm:100,mm:1000,in:39.3701,ft:3.28084,mi:0.000621371},Weight:{kg:1,g:1000,lb:2.20462,oz:35.274},Temperature:{C:'C',F:'F',K:'K'},Speed:{mps:1,'km/h':3.6,mph:2.23694},Data:{B:1,KB:1/1024,MB:1/1048576,GB:1/1073741824},Time:{s:1,ms:1000,min:1/60,h:1/3600,day:1/86400}};
+function updateConvUnits(){const cat=document.getElementById('conv-cat')?.value;const units=Object.keys(CONV_UNITS[cat]||{});['conv-from','conv-to'].forEach((id,i)=>{const s=document.getElementById(id);if(s){s.innerHTML=units.map(u=>`<option>${u}</option>`).join('');s.selectedIndex=i===1?1:0;}});doConvert();}
+function swapConv(){const f=document.getElementById('conv-from'),t=document.getElementById('conv-to');if(f&&t){[f.value,t.value]=[t.value,f.value];doConvert();}}
+function doConvert(){const cat=document.getElementById('conv-cat')?.value,from=document.getElementById('conv-from')?.value,to=document.getElementById('conv-to')?.value,val=parseFloat(document.getElementById('conv-val')?.value)||0,res_el=document.getElementById('conv-result');if(!res_el)return;let res;if(cat==='Temperature'){let c;if(from==='C')c=val;else if(from==='F')c=(val-32)*5/9;else c=val-273.15;if(to==='C')res=c;else if(to==='F')res=c*9/5+32;else res=c+273.15;}else{const u=CONV_UNITS[cat];res=(val/u[from])*u[to];}res_el.textContent=`${val} ${from} = ${parseFloat(res?.toFixed(6))} ${to}`;}
+
+function buildWeather(){return `<div class="app-content"><div style="display:flex;gap:8px;margin-bottom:12px"><input class="app-input" id="weather-city" placeholder="Enter city..." style="flex:1"><button class="app-btn" onclick="fetchWeather()">Search</button><button class="app-btn" onclick="detectWeatherLocation()">📍</button></div><div id="weather-content"><div style="color:var(--text-muted);text-align:center;padding:40px">Enter a city or detect location</div></div></div>`;}
+function detectWeatherLocation(){navigator.geolocation.getCurrentPosition(pos=>fetchWeatherCoords(pos.coords.latitude,pos.coords.longitude),()=>notify('error','Location','Permission denied'));}
+function fetchWeather(){const city=document.getElementById('weather-city')?.value?.trim();if(!city)return;const el=document.getElementById('weather-content');if(!el)return;el.innerHTML='<div style="display:flex;justify-content:center;padding:40px"><div class="spin"></div></div>';fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${WEATHER_API_KEY}&units=metric`).then(r=>r.json()).then(renderWeather).catch(()=>{if(el)el.innerHTML='<div style="color:var(--accent-red);text-align:center;padding:20px">Connection error</div>';});}
+function fetchWeatherCoords(lat,lon){fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=metric`).then(r=>r.json()).then(d=>{if(document.getElementById('weather-city'))document.getElementById('weather-city').value=d.name||'';renderWeather(d);}).catch(()=>{});}
+const WI={'01d':'☀️','01n':'🌙','02d':'⛅','02n':'🌙','03d':'☁️','04d':'☁️','09d':'🌧️','10d':'🌦️','11d':'⛈️','13d':'❄️','50d':'🌫️'};
+function renderWeather(d){const el=document.getElementById('weather-content');if(!el)return;if(d.cod&&d.cod!==200){el.innerHTML=`<div style="color:var(--accent-red);text-align:center;padding:20px">${d.message||'City not found'}</div>`;return;}const ico=WI[d.weather?.[0]?.icon]||WI[d.weather?.[0]?.icon?.replace('n','d')]||'🌤️';el.innerHTML=`<div class="weather-main"><div class="weather-icon-big">${ico}</div><div><div style="font-size:13px;color:var(--text-muted)">${d.name}, ${d.sys?.country}</div><div class="weather-temp">${Math.round(d.main?.temp)}°C</div><div class="weather-desc">${d.weather?.[0]?.description}</div></div></div><div class="weather-details"><div class="weather-stat"><div class="weather-stat-val">${d.main?.humidity}%</div><div class="weather-stat-lbl">Humidity</div></div><div class="weather-stat"><div class="weather-stat-val">${d.wind?.speed} m/s</div><div class="weather-stat-lbl">Wind</div></div><div class="weather-stat"><div class="weather-stat-val">${Math.round(d.main?.feels_like)}°C</div><div class="weather-stat-lbl">Feels Like</div></div></div>`;}
+
+let prayerInterval;
+function buildPrayer(){return `<div class="app-content"><div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><select class="app-input" id="prayer-method" style="flex:1" onchange="loadPrayer()"><option value="2">ISNA</option><option value="1">MWL</option><option value="5">Egypt</option><option value="4" selected>Makkah</option><option value="3">Karachi</option></select><button class="app-btn" onclick="loadPrayer()">📍 Detect</button></div><div id="prayer-content"><div style="color:var(--text-muted);text-align:center;padding:40px">Detecting location...</div></div></div>`;}
+function loadPrayer(){const el=document.getElementById('prayer-content');if(!el)return;navigator.geolocation.getCurrentPosition(pos=>{const method=document.getElementById('prayer-method')?.value||'4';fetch(`https://api.aladhan.com/v1/timings?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&method=${method}`).then(r=>r.json()).then(data=>{const t=data.data.timings,hijri=data.data.date.hijri;const names=['Fajr','Sunrise','Dhuhr','Asr','Maghrib','Isha'];const keys=['Fajr','Sunrise','Dhuhr','Asr','Maghrib','Isha'];const now=new Date();const toMin=s=>{const[h,m]=s.split(':').map(Number);return h*60+m;};const nowMin=now.getHours()*60+now.getMinutes();const nextIdx=keys.findIndex(k=>toMin(t[k])>nowMin);el.innerHTML=`<div style="text-align:center;font-size:12px;color:var(--text-muted);margin-bottom:8px">${hijri.day} ${hijri.month.en} ${hijri.year} AH</div><div class="prayer-countdown"><div class="prayer-countdown-lbl">Next: ${nextIdx>=0?names[nextIdx]:'Fajr (tomorrow)'}</div><div class="prayer-countdown-time" id="prayer-timer">--:--:--</div></div><div class="prayer-grid">${keys.map((k,i)=>`<div class="prayer-card ${i===nextIdx?'next':''}"><div class="prayer-name">${names[i]}</div><div class="prayer-time">${t[k]}</div></div>`).join('')}</div>`;clearInterval(prayerInterval);prayerInterval=setInterval(()=>{const n=new Date();const nm=n.getHours()*60+n.getMinutes();const ti=document.getElementById('prayer-timer');if(!ti)return clearInterval(prayerInterval);const target=nextIdx>=0?toMin(t[keys[nextIdx]]):toMin(t['Fajr'])+1440;let diff=(target-nm)*60-n.getSeconds();if(diff<0)diff+=86400;const hh=Math.floor(diff/3600),mm=Math.floor((diff%3600)/60),ss=diff%60;ti.textContent=`${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;},1000);}).catch(()=>{el.innerHTML='<div style="color:var(--accent-red);text-align:center;padding:20px">Could not fetch prayer times</div>';});},()=>{if(el)el.innerHTML='<div style="color:var(--accent-red);text-align:center;padding:20px">Location denied</div>';});}
+
+function buildCalendar(){const now=new Date();return `<div class="app-content" id="cal-root" data-month="${now.getMonth()}" data-year="${now.getFullYear()}"><div class="cal-header"><div class="cal-nav" onclick="calNav(-1)">‹</div><div class="cal-month" id="cal-month-title"></div><div class="cal-nav" onclick="calNav(1)">›</div></div><div class="cal-grid" id="cal-grid"></div></div>`;}
+function renderCalendar(){const root=document.getElementById('cal-root');if(!root)return;let m=parseInt(root.dataset.month),y=parseInt(root.dataset.year);const months=['January','February','March','April','May','June','July','August','September','October','November','December'];const title=document.getElementById('cal-month-title');if(title)title.textContent=`${months[m]} ${y}`;const grid=document.getElementById('cal-grid');if(!grid)return;grid.innerHTML=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow">${d}</div>`).join('');const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),today=new Date();for(let i=0;i<first;i++)grid.innerHTML+=`<div class="cal-day other-month"></div>`;for(let d=1;d<=days;d++){const isToday=d===today.getDate()&&m===today.getMonth()&&y===today.getFullYear();grid.innerHTML+=`<div class="cal-day${isToday?' today':''}">${d}</div>`;}}
+function calNav(dir){const root=document.getElementById('cal-root');if(!root)return;let m=parseInt(root.dataset.month)+dir,y=parseInt(root.dataset.year);if(m<0){m=11;y--;}if(m>11){m=0;y++;}root.dataset.month=m;root.dataset.year=y;renderCalendar();}
+
+function buildHijri(){return `<div class="app-content"><div style="text-align:center;padding:20px;color:var(--text-muted)">Loading Hijri Calendar...</div></div>`;}
+function initHijri(){fetch('https://api.aladhan.com/v1/gToH?date='+new Date().toLocaleDateString('en-GB').replace(/\//g,'-')).then(r=>r.json()).then(data=>{const h=data.data.hijri;const el=document.querySelector('#win_hijri .win-body');if(!el)return;el.innerHTML=`<div class="app-content"><div style="text-align:center;padding:20px"><div style="font-family:var(--font-display);font-size:clamp(24px,5vw,32px);color:var(--accent-cyan)">${h.day}</div><div style="font-size:clamp(14px,3vw,18px);margin:8px 0">${h.month.en}</div><div style="font-family:var(--font-display);font-size:clamp(16px,3vw,20px);color:var(--text-secondary)">${h.year} AH</div><div style="font-size:12px;color:var(--text-muted);margin-top:12px">${h.designation.expanded}</div><div style="font-size:clamp(18px,4vw,24px);margin-top:16px;direction:rtl">${h.month.ar}</div></div></div>`;}).catch(()=>{});}
+
+function buildReligiousCal(){return `<div class="app-content"><div class="tabs" id="rel-tabs"><div class="tab active" onclick="showRelTab('islam',this)">☪️ Islam</div><div class="tab" onclick="showRelTab('christian',this)">✝️ Christianity</div><div class="tab" onclick="showRelTab('hinduism',this)">🕉️ Hinduism</div></div><div id="rel-content"></div></div>`;}
+const REL_DATES={islam:[{name:'Muharram (Islamic New Year)',date:'~Jul 2026'},{name:'Ashura',date:'~Jul 2026'},{name:'Mawlid al-Nabi',date:'~Sep 2026'},{name:'Ramadan begins',date:'~Feb 2027'},{name:'Eid al-Fitr',date:'~Mar 2027'},{name:'Eid al-Adha',date:'~Jun 2027'}],christian:[{name:'Easter Sunday',date:'Apr 5, 2026'},{name:'Good Friday',date:'Apr 3, 2026'},{name:'Pentecost',date:'May 24, 2026'},{name:'Christmas',date:'Dec 25, 2026'}],hinduism:[{name:'Makar Sankranti',date:'Jan 14, 2026'},{name:'Holi',date:'Mar 14, 2026'},{name:'Ram Navami',date:'Apr 8, 2026'},{name:'Diwali',date:'Oct 20, 2026'},{name:'Navratri',date:'Oct 8-17, 2026'}]};
+function showRelTab(tab,el){document.querySelectorAll('#rel-tabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');const data=REL_DATES[tab]||[];document.getElementById('rel-content').innerHTML=data.map(d=>`<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid var(--border);font-size:13px"><span style="color:var(--text-primary)">${d.name}</span><span style="color:var(--accent-cyan);font-family:var(--font-mono)">${d.date}</span></div>`).join('');}
+
+let leafletMap;
+function buildMaps(){return `<div id="map-container"><div class="map-toolbar"><input class="app-input" id="map-search" placeholder="Search location..." style="flex:1;padding:5px 10px"><button class="app-btn" onclick="mapSearch()">Search</button><button class="app-btn" onclick="mapLocate()">📍</button></div><div id="map-leaflet"></div></div>`;}
+function initMaps(){if(leafletMap){leafletMap.remove();leafletMap=null;}const el=document.getElementById('map-leaflet');if(!el)return;leafletMap=L.map('map-leaflet',{zoomControl:true}).setView([20,0],2);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'(c) OpenStreetMap'}).addTo(leafletMap);}
+function mapSearch(){const q=document.getElementById('map-search')?.value?.trim();if(!q||!leafletMap)return;fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`).then(r=>r.json()).then(data=>{if(!data.length)return notify('warning','Not found','Location not found');const{lat,lon,display_name}=data[0];leafletMap.setView([lat,lon],13);L.marker([lat,lon]).addTo(leafletMap).bindPopup(display_name).openPopup();});}
+function mapLocate(){navigator.geolocation.getCurrentPosition(pos=>{if(!leafletMap)return;leafletMap.setView([pos.coords.latitude,pos.coords.longitude],14);L.marker([pos.coords.latitude,pos.coords.longitude]).addTo(leafletMap).bindPopup('You are here').openPopup();},()=>notify('error','Error','Location denied'));}
+
+// =====================================================
+// FILE MANAGER - GOOGLE DRIVE INTEGRATION
+// FIX: No longer shows "connect drive" error.
+// Files stored in: Software/Users/{username}/ inside generations.frz@gmail.com's Drive
+// Uses Google Drive API v3 via gapi.
+// To delete user data: remove Software/Users/{username}/ folder from Drive
+// =====================================================
+let fmCurrentFolder = null, fmFolderStack = [], fmFiles = [];
+
+function buildFileManager() {
+  return `<div class="fm-layout">
+    <div class="fm-sidebar">
+      <div class="app-label" style="padding:8px 4px">STORAGE</div>
+      <div class="fm-tree-item active" id="fm-tree-root" onclick="fmGoRoot()">☁️ My Drive</div>
+      <div class="fm-tree-item" onclick="fmGoPath('Software')">📁 Software</div>
+      <div class="fm-tree-item" onclick="fmGoPath('Documents')">📄 Documents</div>
+      <div class="fm-tree-item" onclick="fmGoPath('Images')">🖼️ Images</div>
+      <div class="fm-tree-item" onclick="fmGoPath('Music')">🎵 Music</div>
+      <div style="flex:1"></div>
+      <button class="app-btn" style="margin:8px 4px;padding:6px 10px;font-size:11px;width:calc(100% - 8px)" onclick="window.open('https://drive.google.com','_blank')">↗ Open Drive</button>
+    </div>
+    <div class="fm-main">
+      <div class="fm-toolbar">
+        <button class="app-btn" style="padding:4px 10px;font-size:12px" onclick="fmNewFolder()">📁 New Folder</button>
+        <button class="app-btn" style="padding:4px 10px;font-size:12px" onclick="fmUpload()">⬆️ Upload</button>
+        <button class="app-btn" style="padding:4px 10px;font-size:12px" onclick="fmRefresh()">🔄</button>
+        <input type="file" id="fm-upload-input" style="display:none" multiple onchange="fmHandleUpload(this)">
+        <div class="fm-breadcrumb" id="fm-breadcrumb">/ Root</div>
+      </div>
+      <div class="fm-grid" id="fm-grid">
+        <div class="fm-empty">
+          <div class="spin"></div>
+          <div style="margin-top:12px;font-size:13px;color:var(--text-secondary)">Loading Drive...</div>
+        </div>
+      </div>
+      <div class="fm-status" id="fm-status">Ready</div>
+    </div>
+  </div>`;
+}
+
+// Initialize Google Drive API
+function initDriveAPI() {
+  if (driveInited) { fmLoadRoot(); return; }
+
+  // Show connecting state
+  fmSetStatus('Connecting to Google Drive...');
+
+  // Wait for both gapi and google.accounts to be ready
+  function _waitAndInit(attempts) {
+    if (attempts > 20) {
+      fmShowMessage('⚠️', 'Drive Load Failed',
+        'Google API scripts did not load. Check your internet connection and refresh.<br><br>' +
+        '<button class="app-btn" onclick="location.reload()">↺ Refresh</button>');
+      return;
+    }
+    if (typeof gapi === 'undefined' || typeof google === 'undefined' || !google.accounts) {
+      setTimeout(() => _waitAndInit(attempts + 1), 300);
+      return;
+    }
+    _initDriveWithGapi();
+  }
+
+  function _initDriveWithGapi() {
+    gapi.load('client', async () => {
+      try {
+        await gapi.client.init({
+          apiKey: DRIVE_API_KEY,
+          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+        });
+
+        driveTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: DRIVE_CLIENT_ID,
+          scope: DRIVE_SCOPES,
+          callback: (resp) => {
+            if (resp.error) {
+              notify('error', 'Drive', 'Auth failed: ' + resp.error);
+              fmShowMessage('🔐', 'Drive Auth Failed',
+                'Google Drive authorisation failed: <b>' + resp.error + '</b><br><br>' +
+                'Make sure this site domain is added to your OAuth client Authorised JavaScript Origins in Google Cloud Console.<br><br>' +
+                '<button class="app-btn" onclick="initDriveAPI()">↺ Try Again</button>');
+              return;
+            }
+            driveInited = true;
+            fmEnsureBaseFolder();
+          }
+        });
+
+        // Use 'select_account' so user can pick which Google account to use
+        driveTokenClient.requestAccessToken({ prompt: 'select_account' });
+
+      } catch(e) {
+        notify('error', 'Drive', 'Init error: ' + e.message);
+        fmShowMessage('❌', 'Drive Init Error',
+          e.message + '<br><br>' +
+          '<button class="app-btn" onclick="initDriveAPI()">↺ Try Again</button>');
+      }
+    });
+  }
+
+  _waitAndInit(0);
+}
+
+// Ensure Software/Users/{username}/ folder exists in Drive
+async function fmEnsureBaseFolder() {
+  fmSetStatus('Connecting to Google Drive...');
+  try {
+    // Find or create Software folder
+    const softwareId = await fmFindOrCreateFolder('Software', 'root');
+    // Find or create Users folder inside Software
+    const usersId    = await fmFindOrCreateFolder('Users', softwareId);
+    // Find or create user's own folder
+    const userFolder = await fmFindOrCreateFolder(userData.name || 'User', usersId);
+    driveFolderId = userFolder;
+    fmCurrentFolder = userFolder;
+    fmFolderStack = [{ id:'root', name:'Root' }, { id:softwareId, name:'Software' }, { id:usersId, name:'Users' }, { id:userFolder, name:userData.name }];
+    fmLoadFiles(userFolder);
+    fmSetStatus('Connected to Drive: Software/Users/' + userData.name);
+  } catch(e) {
+    notify('error','Drive','Error setting up folder: '+e.message);
+  }
+}
+
+async function fmFindOrCreateFolder(name, parentId) {
+  // Search for existing folder
+  const q = `name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+  const res = await gapi.client.drive.files.list({ q, fields:'files(id,name)', spaces:'drive' });
+  const files = res.result.files;
+  if (files && files.length > 0) return files[0].id;
+  // Create new folder
+  const cr = await gapi.client.drive.files.create({ resource: { name, mimeType:'application/vnd.google-apps.folder', parents:[parentId] }, fields:'id' });
+  return cr.result.id;
+}
+
+async function fmLoadFiles(folderId) {
+  fmSetStatus('Loading...');
+  try {
+    const res = await gapi.client.drive.files.list({
+      q: `'${folderId}' in parents and trashed=false`,
+      fields: 'files(id,name,mimeType,size,modifiedTime,iconLink)',
+      orderBy: 'folder,name',
+      pageSize: 100
+    });
+    fmFiles = res.result.files || [];
+    fmRenderFiles(fmFiles);
+    fmSetStatus(`${fmFiles.length} item${fmFiles.length!==1?'s':''}`);
+    fmUpdateBreadcrumb();
+  } catch(e) {
+    notify('error','Drive','Could not load files: '+e.message);
+    fmSetStatus('Error loading files');
+  }
+}
+
+function fmRenderFiles(files) {
+  const grid = document.getElementById('fm-grid');
+  if (!grid) return;
+  if (!files.length) {
+    grid.innerHTML = '<div class="fm-empty"><div style="font-size:40px">📂</div><div style="margin-top:8px">This folder is empty</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px">Upload files or create a folder</div></div>';
+    return;
+  }
+  grid.innerHTML = files.map(f => {
+    const isFolder = f.mimeType === 'application/vnd.google-apps.folder';
+    const icon = isFolder ? '📁' : fmGetIcon(f.name, f.mimeType);
+    return `<div class="fm-file" ondblclick="${isFolder?`fmOpenFolder('${f.id}','${f.name.replace(/'/g,"\\'")}')`:`fmOpenFile('${f.id}','${f.name.replace(/'/g,"\\'")}','${f.mimeType}')`}" oncontextmenu="e=>{e.preventDefault();fmCtx('${f.id}','${f.name.replace(/'/g,"\\'")}',${isFolder});}">
+      <div class="fm-file-icon">${icon}</div>
+      <div class="fm-file-name">${f.name}</div>
+    </div>`;
+  }).join('');
+}
+
+function fmGetIcon(name, mime) {
+  if (mime?.includes('image')) return '🖼️';
+  if (mime?.includes('audio')) return '🎵';
+  if (mime?.includes('video')) return '🎬';
+  if (mime?.includes('pdf'))   return '📋';
+  if (mime?.includes('spreadsheet') || name?.endsWith('.xlsx') || name?.endsWith('.csv')) return '📊';
+  if (mime?.includes('document') || name?.endsWith('.docx')) return '📝';
+  if (mime?.includes('presentation')) return '📊';
+  if (name?.endsWith('.js') || name?.endsWith('.py') || name?.endsWith('.html')) return '💻';
+  if (name?.endsWith('.zip') || name?.endsWith('.rar')) return '🗜️';
+  return '📄';
+}
+
+function fmOpenFolder(id, name) {
+  fmFolderStack.push({ id, name });
+  fmCurrentFolder = id;
+  fmLoadFiles(id);
+}
+
+function fmGoRoot() {
+  fmFolderStack = fmFolderStack.slice(0, 1);
+  fmCurrentFolder = 'root';
+  fmLoadFiles('root');
+}
+
+function fmGoPath(name) {
+  if (!driveInited) { initDriveAPI(); return; }
+  fmFolderStack = [{ id:'root', name:'Root' }];
+  fmCurrentFolder = 'root';
+  // Navigate into the named folder if it exists
+  fmFindOrCreateFolder(name, 'root').then(id => {
+    fmFolderStack.push({ id, name });
+    fmCurrentFolder = id;
+    fmLoadFiles(id);
+  }).catch(()=>{});
+}
+
+function fmUpdateBreadcrumb() {
+  const el = document.getElementById('fm-breadcrumb');
+  if (el) el.textContent = '/ ' + fmFolderStack.map(f=>f.name).join(' / ');
+}
+
+async function fmNewFolder() {
+  if (!driveInited) { initDriveAPI(); return; }
+  const name = prompt('Folder name:');
+  if (!name) return;
+  try {
+    await gapi.client.drive.files.create({ resource: { name, mimeType:'application/vnd.google-apps.folder', parents:[fmCurrentFolder||'root'] }, fields:'id' });
+    notify('success','File Manager','Folder "'+name+'" created');
+    fmRefresh();
+  } catch(e) { notify('error','Drive','Could not create folder'); }
+}
+
+function fmUpload() {
+  if (!driveInited) { initDriveAPI(); return; }
+  document.getElementById('fm-upload-input')?.click();
+}
+
+async function fmHandleUpload(input) {
+  if (!driveInited || !input.files.length) return;
+  const files = Array.from(input.files);
+  fmSetStatus('Uploading ' + files.length + ' file(s)...');
+  for (const file of files) {
+    try {
+      const meta  = { name: file.name, parents: [fmCurrentFolder || 'root'] };
+      const form  = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(meta)], {type:'application/json'}));
+      form.append('file', file);
+      const token = gapi.auth.getToken()?.access_token;
+      const res   = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token },
+        body: form
+      });
+      if (!res.ok) throw new Error(await res.text());
+      notify('success','Uploaded', file.name);
+    } catch(e) { notify('error','Upload failed', file.name + ': ' + e.message); }
+  }
+  input.value = '';
+  fmRefresh();
+}
+
+function fmOpenFile(id, name, mime) {
+  window.open(`https://drive.google.com/file/d/${id}/view`, '_blank');
+}
+
+function fmRefresh() {
+  if (!driveInited) { initDriveAPI(); return; }
+  fmLoadFiles(fmCurrentFolder || 'root');
+}
+
+function fmSetStatus(msg) {
+  const el = document.getElementById('fm-status');
+  if (el) el.textContent = msg;
+}
+
+function fmShowMessage(icon, title, html) {
+  const grid = document.getElementById('fm-grid');
+  if (grid) grid.innerHTML = `<div class="fm-empty"><div style="font-size:40px">${icon}</div><div style="font-size:15px;color:var(--text-secondary);font-weight:600;margin-top:8px">${title}</div><div style="font-size:12px;color:var(--text-muted);margin-top:8px;max-width:340px;line-height:1.7;text-align:center">${html}</div></div>`;
+}
+
+// Music Player
+let musicAudio=null, musicTracks=[], musicIdx=0;
+function buildMusic(){return `<div class="music-layout"><div class="music-player"><div class="music-art" id="music-art">🎵</div><div><div class="music-title" id="music-title">${musicTracks.length>0?musicTracks[musicIdx]?.name?.replace(/\.[^.]+$/,''):'No track loaded'}</div><div class="music-artist" id="music-artist">${musicTracks.length>0?'Local File':'-'}</div></div><div class="music-progress" style="width:min(240px,80%)"><div class="music-bar" onclick="seekMusic(event)"><div class="music-fill" id="music-fill"></div></div><div class="music-times"><span id="music-cur">0:00</span><span id="music-dur">0:00</span></div></div><div class="music-controls"><div class="mc-btn" onclick="shuffleMusic()">🔀</div><div class="mc-btn" onclick="prevTrack()">⏮</div><div class="mc-play" id="mc-play" onclick="toggleMusic()">${musicAudio&&!musicAudio.paused?'⏸':'▶'}</div><div class="mc-btn" onclick="nextTrack()">⏭</div><div class="mc-btn" onclick="repeatMusic()">🔁</div></div><input type="file" id="music-file" accept="audio/*" multiple style="display:none" onchange="loadMusicFiles(this)"><button class="app-btn" onclick="document.getElementById('music-file').click()">📂 Load Music</button></div><div class="music-playlist"><div class="app-label" style="margin-bottom:8px">PLAYLIST</div><div id="music-playlist"></div></div></div>`;}
+function initMusicPlayer(){if(musicTracks.length>0){renderPlaylist();}if(musicAudio){musicAudio.addEventListener('timeupdate',updateMusicProgress);if(!musicAudio.paused){const art=document.getElementById('music-art');const play=document.getElementById('mc-play');if(art)art.classList.add('playing');if(play)play.textContent='⏸';}}}
+function loadMusicFiles(input){musicTracks=Array.from(input.files);renderPlaylist();if(musicTracks.length)playTrack(0);}
+function renderPlaylist(){const pl=document.getElementById('music-playlist');if(!pl)return;pl.innerHTML=musicTracks.map((t,i)=>`<div class="playlist-item ${i===musicIdx?'active':''}" onclick="playTrack(${i})">${t.name.replace(/\.[^.]+$/,'')}</div>`).join('');}
+function playTrack(idx){musicIdx=idx;const track=musicTracks[idx];if(!track)return;if(musicAudio){musicAudio.pause();URL.revokeObjectURL(musicAudio.src);}musicAudio=new Audio(URL.createObjectURL(track));musicAudio.volume=(osSettings.volume||70)/100;musicAudio.play();const tEl=document.getElementById('music-title');if(tEl)tEl.textContent=track.name.replace(/\.[^.]+$/,'');const art=document.getElementById('music-art');if(art)art.classList.add('playing');const play=document.getElementById('mc-play');if(play)play.textContent='⏸';musicAudio.addEventListener('timeupdate',updateMusicProgress);musicAudio.addEventListener('ended',nextTrack);renderPlaylist();}
+function toggleMusic(){if(!musicAudio)return;const play=document.getElementById('mc-play'),art=document.getElementById('music-art');if(musicAudio.paused){musicAudio.play();if(play)play.textContent='⏸';if(art)art.classList.add('playing');}else{musicAudio.pause();if(play)play.textContent='▶';if(art)art.classList.remove('playing');}}
+function prevTrack(){if(musicTracks.length)playTrack((musicIdx-1+musicTracks.length)%musicTracks.length);}
+function nextTrack(){if(musicTracks.length)playTrack((musicIdx+1)%musicTracks.length);}
+function shuffleMusic(){if(musicTracks.length)playTrack(Math.floor(Math.random()*musicTracks.length));}
+function repeatMusic(){if(musicAudio){musicAudio.currentTime=0;musicAudio.play();}}
+function updateMusicProgress(){if(!musicAudio)return;const pct=(musicAudio.currentTime/musicAudio.duration*100)||0;const fill=document.getElementById('music-fill');if(fill)fill.style.width=pct+'%';const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;const cur=document.getElementById('music-cur'),dur=document.getElementById('music-dur');if(cur)cur.textContent=fmt(musicAudio.currentTime);if(dur)dur.textContent=fmt(musicAudio.duration||0);}
+function seekMusic(e){if(!musicAudio)return;musicAudio.currentTime=(e.offsetX/e.currentTarget.offsetWidth)*musicAudio.duration;}
+
+function buildCodeEditor(){return `<div class="editor-layout"><div class="editor-toolbar"><select class="app-input" id="code-lang" style="width:120px;padding:4px 8px">${['javascript','python','c','cpp','java','rust','go','php','ruby','bash','html','css','sql','typescript','kotlin','swift'].map(l=>`<option value="${l}">${l}</option>`).join('')}</select><button class="app-btn" style="padding:4px 12px" onclick="runCode()">▶ Run</button><button class="app-btn" style="padding:4px 10px" onclick="clearCode()">🗑️ Clear</button><span style="font-size:11px;color:var(--text-muted)">Ctrl+Enter to run</span></div><div class="editor-area"><textarea class="editor-textarea" id="code-input" placeholder="// Write your code here..." spellcheck="false" onkeydown="handleCodeKey(event)"></textarea></div><div class="editor-output" id="code-output">// Output will appear here</div></div>`;}
+function handleCodeKey(e){if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();runCode();return;}if(e.key==='Tab'){e.preventDefault();const t=e.target,s=t.selectionStart;t.value=t.value.substring(0,s)+'  '+t.value.substring(s);t.selectionStart=t.selectionEnd=s+2;}}
+function runCode(){
+  const code = document.getElementById('code-input')?.value;
+  const lang  = document.getElementById('code-lang')?.value;
+  const out   = document.getElementById('code-output');
+  if (!out) return;
+  if (!code?.trim()) { out.textContent = '// No code to run'; return; }
+  if (lang === 'javascript') {
+    const logs = [];
+    const origLog   = console.log;
+    const origError = console.error;
+    const origWarn  = console.warn;
+    console.log   = (...a) => logs.push(a.map(x => typeof x === 'object' ? JSON.stringify(x,null,2) : String(x)).join(' '));
+    console.error = (...a) => logs.push('❌ ' + a.map(String).join(' '));
+    console.warn  = (...a) => logs.push('⚠️ ' + a.map(String).join(' '));
+    try {
+      const r = new Function(code)();
+      console.log = origLog; console.error = origError; console.warn = origWarn;
+      out.textContent = logs.join('\n') + (r !== undefined ? (logs.length ? '\n' : '') + '→ ' + JSON.stringify(r, null, 2) : '');
+      if (!out.textContent.trim()) out.textContent = '// Ran successfully (no output)';
+    } catch(e) {
+      console.log = origLog; console.error = origError; console.warn = origWarn;
+      out.textContent = '❌ ' + e.name + ': ' + e.message + (e.stack ? '\n' + e.stack.split('\n').slice(1,3).join('\n') : '');
+    }
+  } else if (lang === 'html') {
+    // Preview HTML in an iframe
+    const win = document.getElementById('win_code');
+    let iframe = win?.querySelector('.html-preview-frame');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.className = 'html-preview-frame';
+      iframe.style.cssText = 'width:100%;height:200px;border:1px solid var(--border);border-radius:6px;margin-top:8px;background:#fff';
+      out.parentNode.insertBefore(iframe, out);
+    }
+    iframe.srcdoc = code;
+    out.textContent = '// HTML rendered in preview above';
+  } else {
+    out.textContent = '// ' + lang.toUpperCase() + ' execution requires a Judge0 API server.\n// JavaScript runs natively in this editor.\n// Set VITE_JUDGE0_URL in your .env for server-side execution.';
+  }
+}
+function clearCode(){const i=document.getElementById('code-input'),o=document.getElementById('code-output');if(i)i.value='';if(o)o.textContent='// Output will appear here';}
+
+function buildWord(){return `<div style="display:flex;flex-direction:column;height:100%"><div class="word-toolbar"><div class="word-tool" onclick="execCmd('bold')" style="font-weight:700">B</div><div class="word-tool" onclick="execCmd('italic')" style="font-style:italic">I</div><div class="word-tool" onclick="execCmd('underline')" style="text-decoration:underline">U</div><div class="word-tool" onclick="execCmd('strikeThrough')" style="text-decoration:line-through">S</div><div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div><div class="word-tool" onclick="execCmd('justifyLeft')">◀</div><div class="word-tool" onclick="execCmd('justifyCenter')">≡</div><div class="word-tool" onclick="execCmd('justifyRight')">▶</div><div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div><div class="word-tool" onclick="execCmd('insertUnorderedList')">•</div><div class="word-tool" onclick="execCmd('insertOrderedList')">1.</div><div style="flex:1"></div><button class="app-btn" style="padding:4px 10px;font-size:12px" onclick="printWord()">🖨️ Print</button></div><div class="word-editor" id="word-editor" contenteditable="true"><p>Start typing your document here...</p></div></div>`;}
+function execCmd(cmd,val){document.execCommand(cmd,false,val||null);document.getElementById('word-editor')?.focus();}
+function printWord(){window.print();}
+
+let wbCtx,wbCanvas,wbDrawing=false,wbTool='pen',wbHistory=[],wbStart={};
+function buildWhiteboard(){return `<div style="display:flex;flex-direction:column;height:100%"><div class="wb-toolbar"><span class="wb-tool active" onclick="setWbTool('pen',this)">✏️ Pen</span><span class="wb-tool" onclick="setWbTool('eraser',this)">⬜ Erase</span><span class="wb-tool" onclick="setWbTool('line',this)">/ Line</span><span class="wb-tool" onclick="setWbTool('rect',this)">□ Rect</span><span class="wb-tool" onclick="setWbTool('circle',this)">○ Circle</span><div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div><input type="color" class="wb-color-picker" id="wb-color" value="#00d4ff"><select class="app-input" id="wb-size" style="width:60px;padding:3px"><option value="2">2px</option><option value="4" selected>4px</option><option value="8">8px</option><option value="16">16px</option></select><div style="flex:1"></div><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="undoWb()">↩</button><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="clearWb()">🗑️</button><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="downloadWb()">⬇️</button></div><canvas id="wb-canvas"></canvas></div>`;}
+function initWhiteboard(){wbCanvas=document.getElementById('wb-canvas');if(!wbCanvas)return;const c=wbCanvas.parentElement;wbCanvas.width=c.offsetWidth;wbCanvas.height=c.offsetHeight-44;wbCtx=wbCanvas.getContext('2d');wbCtx.fillStyle='#0a1420';wbCtx.fillRect(0,0,wbCanvas.width,wbCanvas.height);
+  function getPos(e){if(e.touches){const r=wbCanvas.getBoundingClientRect();return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top};}return{x:e.offsetX,y:e.offsetY};}
+  wbCanvas.addEventListener('mousedown',e=>{wbDrawing=true;const p=getPos(e);wbStart=p;wbCtx.beginPath();wbCtx.moveTo(p.x,p.y);});
+  wbCanvas.addEventListener('touchstart',e=>{e.preventDefault();wbDrawing=true;const p=getPos(e);wbStart=p;wbCtx.beginPath();wbCtx.moveTo(p.x,p.y);},{passive:false});
+  wbCanvas.addEventListener('mousemove',e=>{if(!wbDrawing)return;const color=document.getElementById('wb-color').value,size=parseInt(document.getElementById('wb-size').value)||4,p=getPos(e);if(wbTool==='pen'){wbCtx.strokeStyle=color;wbCtx.lineWidth=size;wbCtx.lineCap='round';wbCtx.lineTo(p.x,p.y);wbCtx.stroke();}else if(wbTool==='eraser'){wbCtx.clearRect(p.x-size*2,p.y-size*2,size*4,size*4);}});
+  wbCanvas.addEventListener('touchmove',e=>{e.preventDefault();if(!wbDrawing)return;const color=document.getElementById('wb-color').value,size=parseInt(document.getElementById('wb-size').value)||4,p=getPos(e);if(wbTool==='pen'){wbCtx.strokeStyle=color;wbCtx.lineWidth=size;wbCtx.lineCap='round';wbCtx.lineTo(p.x,p.y);wbCtx.stroke();}},{passive:false});
+  const endDraw=e=>{if(!wbDrawing)return;wbDrawing=false;const color=document.getElementById('wb-color').value,size=parseInt(document.getElementById('wb-size').value)||4;const p=e.changedTouches?{x:e.changedTouches[0].clientX-wbCanvas.getBoundingClientRect().left,y:e.changedTouches[0].clientY-wbCanvas.getBoundingClientRect().top}:{x:e.offsetX,y:e.offsetY};if(wbTool==='line'){wbCtx.beginPath();wbCtx.moveTo(wbStart.x,wbStart.y);wbCtx.lineTo(p.x,p.y);wbCtx.strokeStyle=color;wbCtx.lineWidth=size;wbCtx.stroke();}else if(wbTool==='rect'){wbCtx.strokeStyle=color;wbCtx.lineWidth=size;wbCtx.strokeRect(wbStart.x,wbStart.y,p.x-wbStart.x,p.y-wbStart.y);}else if(wbTool==='circle'){const rx=(p.x-wbStart.x)/2,ry=(p.y-wbStart.y)/2;wbCtx.beginPath();wbCtx.ellipse(wbStart.x+rx,wbStart.y+ry,Math.abs(rx),Math.abs(ry),0,0,Math.PI*2);wbCtx.strokeStyle=color;wbCtx.lineWidth=size;wbCtx.stroke();}wbHistory.push(wbCtx.getImageData(0,0,wbCanvas.width,wbCanvas.height));};
+  wbCanvas.addEventListener('mouseup',endDraw);wbCanvas.addEventListener('touchend',endDraw);}
+function setWbTool(tool,el){wbTool=tool;document.querySelectorAll('.wb-tool').forEach(t=>t.classList.remove('active'));el.classList.add('active');}
+function undoWb(){if(wbHistory.length>1){wbHistory.pop();wbCtx.putImageData(wbHistory[wbHistory.length-1],0,0);}else{clearWb();}}
+function clearWb(){if(wbCanvas){wbCtx.fillStyle='#0a1420';wbCtx.fillRect(0,0,wbCanvas.width,wbCanvas.height);wbHistory=[];}}
+function downloadWb(){if(!wbCanvas)return;const a=document.createElement('a');a.download='whiteboard.png';a.href=wbCanvas.toDataURL();a.click();}
+
+function buildHowTo(){const sections={'Getting Started':'<h3>GETTING STARTED</h3><p>Welcome to Freezy-OS! Double-click desktop icons or click dock icons to launch apps. Click the FRZ logo (top-left) to open the App Drawer.</p>','Keyboard Shortcuts':'<h3>KEYBOARD SHORTCUTS</h3><table class="shortcut-table"><tr><td>Win Key</td><td>App Drawer</td></tr><tr><td>Ctrl+D</td><td>Minimize all</td></tr><tr><td>Ctrl+Shift+M</td><td>Music Player</td></tr><tr><td>Ctrl+Shift+F</td><td>File Manager</td></tr><tr><td>Ctrl+Shift+S</td><td>Settings</td></tr><tr><td>Ctrl+Shift+T</td><td>Browser</td></tr><tr><td>Ctrl+W</td><td>Close window</td></tr><tr><td>F11</td><td>Fullscreen</td></tr><tr><td>Win+L</td><td>Lock screen</td></tr></table>','Using Apps':'<h3>USING APPS</h3><p>Drag windows by the title bar. Drag bottom-right corner to resize. Green = maximize, Yellow = minimize, Red = close.</p>','QR Connect':'<h3>QR CONNECT</h3><p>On PC: Open QR Connect - a QR code + 6-char code appears.<br>On Phone: Open Freezy-OS → QR Connect → tap "Scan QR" to scan the QR code, or enter the 6-character code manually in the Enter Code tab.</p>','File Manager':'<h3>FILE MANAGER</h3><p>Your files are saved in <b>Software/Users/{YourName}/</b> in your Google Drive. Make sure VITE_DRIVE_CLIENT_ID and VITE_DRIVE_API_KEY are set in .env.</p>','Settings':'<h3>SETTINGS</h3><p>Paste a direct image URL to set wallpaper. Adjust brightness, volume, lock password.</p>','Lock Screen':'<h3>LOCK SCREEN</h3><p>Auto-locks after inactivity. Win+L to lock now. Set password in Settings → System. If no password set, press Enter to unlock.</p>'};
+  const keys=Object.keys(sections);
+  return `<div style="display:flex;height:100%"><div class="howto-nav">${keys.map((k,i)=>`<div class="howto-item ${i===0?'active':''}" onclick="showHowToSection('${k}',this)">${k}</div>`).join('')}</div><div class="howto-content" id="howto-content">${sections[keys[0]]}</div></div>`;}
+const HOWTO_SECTIONS={'Getting Started':'<h3>GETTING STARTED</h3><p>Welcome to Freezy-OS! Double-click desktop icons or click dock icons to launch apps. Click the FRZ logo (top-left) to open the App Drawer.</p>','Keyboard Shortcuts':'<h3>KEYBOARD SHORTCUTS</h3><table class="shortcut-table"><tr><td>Win Key</td><td>App Drawer</td></tr><tr><td>Ctrl+D</td><td>Minimize all</td></tr><tr><td>Ctrl+W</td><td>Close window</td></tr><tr><td>F11</td><td>Fullscreen</td></tr></table>','Using Apps':'<h3>USING APPS</h3><p>Drag title bar to move. Drag corner to resize. Green=maximize, Yellow=minimize, Red=close.</p>','QR Connect':'<h3>QR CONNECT</h3><p>On PC: Open QR Connect → QR code and 6-char code appear. On Phone: Scan QR code or enter code manually.</p>','File Manager':'<h3>FILE MANAGER</h3><p>Files stored in Software/Users/{YourName}/ in your Google Drive.</p>','Settings':'<h3>SETTINGS</h3><p>Change wallpaper by pasting a direct image URL. Adjust brightness, volume, lock password.</p>','Lock Screen':'<h3>LOCK SCREEN</h3><p>Auto-locks after inactivity. Win+L to lock now. Set password in Settings → System.</p>'};
+function showHowToSection(key,el){document.querySelectorAll('.howto-item').forEach(i=>i.classList.remove('active'));el.classList.add('active');const c=document.getElementById('howto-content');if(c)c.innerHTML=HOWTO_SECTIONS[key]||'';}
+
+function buildSearch(){return `<div style="display:flex;flex-direction:column;height:100%;overflow:auto"><div class="search-hero"><div class="search-logo"><span>FRZ</span> Search</div><div class="search-form"><input class="app-input" id="search-input" placeholder="Search the web..." style="flex:1" onkeydown="if(event.key==='Enter')doSearch()"><button class="app-btn" onclick="doSearch()">Search</button></div></div><div class="search-results" id="search-results"></div></div>`;}
+function doSearch(){const q=document.getElementById('search-input')?.value?.trim();if(!q)return;const res=document.getElementById('search-results');if(!res)return;res.innerHTML='<div style="text-align:center;padding:20px"><div class="spin" style="margin:0 auto"></div></div>';fetch(`https://www.googleapis.com/customsearch/v1?key=${SEARCH_API_KEY}&cx=${SEARCH_CX}&q=${encodeURIComponent(q)}`).then(r=>r.json()).then(data=>{if(!data.items||!data.items.length){res.innerHTML='<div style="color:var(--text-muted);text-align:center;padding:20px">No results found</div>';return;}res.innerHTML=data.items.map(item=>`<div class="search-result" onclick="window.open('${item.link}','_blank')"><div class="sr-title">${item.title}</div><div class="sr-url">${item.displayLink}</div><div class="sr-desc">${item.snippet||''}</div></div>`).join('');}).catch(()=>{window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank');});}
+
+function buildBrowser(){return `<div style="display:flex;flex-direction:column;height:100%"><div class="browser-bar"><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="browserHistory(-1)">‹</button><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="browserHistory(1)">›</button><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="loadBrowserUrl()">↻</button><input class="app-input" id="browser-url" placeholder="Enter URL..." style="flex:1;padding:5px 10px" value="https://google.com" onkeydown="if(event.key==='Enter')loadBrowserUrl()"><button class="app-btn" style="padding:4px 8px;font-size:12px" onclick="window.open(document.getElementById('browser-url').value,'_blank')">↗</button></div><div style="flex:1;position:relative"><iframe id="browser-frame" style="width:100%;height:100%;border:none;background:#fff" src="https://google.com" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe></div></div>`;}
+function loadBrowserUrl(){let url=document.getElementById('browser-url')?.value?.trim();if(!url)return;if(!url.startsWith('http'))url='https://'+url;const frame=document.getElementById('browser-frame');if(frame)frame.src=url;}
+function browserHistory(dir){try{if(dir<0)history.back();else history.forward();}catch(e){}}
+
+// =====================================================
+// QR CONNECT - FULLY FIXED
+// PC side: shows QR code + 6-char code + timer
+// Phone side: TWO TABS:
+//   Tab 1 "Scan QR"  - uses ZXing camera scanner
+//   Tab 2 "Enter Code" - manual 6-char code input
+// Session stored in Firebase Realtime DB: qr_sessions/{code}
+// =====================================================
+let qrTimerInt, qrScannerInst = null;
+
+function buildQRConnect() {
+  const isMobileDevice = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  return `<div class="qr-wrap">
+    <div style="font-family:var(--font-display);font-size:12px;letter-spacing:3px;color:var(--accent-cyan)">QR CONNECT</div>
+
+    ${!isMobileDevice ? `
+    <!-- PC VIEW: show QR code + code -->
+    <div style="text-align:center;font-size:13px;color:var(--text-secondary)">Scan the QR code or enter the code on your phone</div>
+    <div id="qr-code-box" class="qr-code-box"></div>
+    <div style="font-size:11px;color:var(--text-muted);margin:2px 0">- OR ENTER ON YOUR PHONE -</div>
+    <div class="qr-code-input" id="qr-code-display">------</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="qr-timer" id="qr-timer">60</div>
+      <div style="font-size:11px;color:var(--text-muted)">sec</div>
+    </div>
+    <div style="font-size:13px;color:var(--text-secondary)" id="qr-status">Waiting for connection...</div>
+    <div class="qr-info">Code expires every 60 seconds. On your phone, open QR Connect and scan or enter the 6-character code.</div>
+    <button class="app-btn" onclick="refreshQR()">🔄 New Code</button>
+    ` : `
+    <!-- PHONE VIEW: scan or enter code -->
+    <div class="qr-tabs">
+      <div class="qr-tab active" id="qr-tab-scan" onclick="switchQRTab('scan')">📷 Scan QR</div>
+      <div class="qr-tab" id="qr-tab-enter" onclick="switchQRTab('enter')">⌨️ Enter Code</div>
+    </div>
+
+    <!-- Scan tab -->
+    <div id="qr-panel-scan" style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%">
+      <video id="qr-scanner-video" class="qr-scanner-video" playsinline></video>
+      <button class="app-btn" id="qr-scan-btn" onclick="startQRScanner()">📷 Start Camera</button>
+      <div style="font-size:12px;color:var(--text-muted);text-align:center">Point your camera at the QR code shown on the PC</div>
+      <div style="font-size:13px;color:var(--accent-cyan)" id="qr-scan-status"></div>
+    </div>
+
+    <!-- Enter code tab -->
+    <div id="qr-panel-enter" style="display:none;flex-direction:column;align-items:center;gap:12px;width:100%">
+      <div style="font-size:13px;color:var(--text-secondary);text-align:center">Enter the 6-character code shown on the PC screen</div>
+      <input class="qr-connect-input" id="qr-enter-code" placeholder="E.g. A3X9KZ" maxlength="6" oninput="this.value=this.value.toUpperCase()" style="font-size:24px;letter-spacing:6px;">
+      <button class="app-btn" style="width:200px" onclick="connectWithCode()">✅ Connect</button>
+      <div style="font-size:12px;color:var(--accent-cyan)" id="qr-enter-status"></div>
+    </div>
+    `}
+  </div>`;
+}
+
+function switchQRTab(tab) {
+  document.getElementById('qr-tab-scan').classList.toggle('active', tab==='scan');
+  document.getElementById('qr-tab-enter').classList.toggle('active', tab==='enter');
+  document.getElementById('qr-panel-scan').style.display  = tab==='scan'  ? 'flex' : 'none';
+  document.getElementById('qr-panel-enter').style.display = tab==='enter' ? 'flex' : 'none';
+  if (tab !== 'scan') stopQRScanner();
+}
+
+function startQRScanner() {
+  const video = document.getElementById('qr-scanner-video');
+  const status= document.getElementById('qr-scan-status');
+  const btn   = document.getElementById('qr-scan-btn');
+  if (!video) return;
+  if (!window.ZXingBrowser) { if(status) status.textContent='Scanner library not loaded. Use Enter Code tab.'; return; }
+
+  stopQRScanner();
+
+  const hints = new Map();
+  hints.set(2, ['QR_CODE']); // DecodeHintType.POSSIBLE_FORMATS
+
+  try {
+    qrScannerInst = new ZXingBrowser.BrowserQRCodeReader();
+    qrScannerInst.decodeFromVideoDevice(null, 'qr-scanner-video', (result, err) => {
+      if (result) {
+        const text = result.getText();
+        // Extract code from "freezyos-connect:XXXXXX" format
+        const code = text.startsWith('freezyos-connect:') ? text.split(':')[1] : text;
+        stopQRScanner();
+        if(btn) btn.textContent = '📷 Start Camera';
+        if(status){ status.textContent = '✅ Code found: '+code; status.style.color='var(--accent-green)'; }
+        // Auto-connect
+        document.getElementById('qr-enter-code') ? document.getElementById('qr-enter-code').value=code : null;
+        connectWithCode(code);
+      }
+    }).catch(e => {
+      if(status) status.textContent = 'Camera error: '+e.message;
+    });
+    if(btn) btn.textContent = '⏹ Stop Camera';
+    if(status){ status.textContent = 'Scanning...'; status.style.color='var(--accent-cyan)'; }
+  } catch(e) {
+    if(status) status.textContent = 'Could not start camera. Check permissions.';
+  }
+}
+
+function stopQRScanner() {
+  if (qrScannerInst) {
+    try { qrScannerInst.reset(); } catch(e) {}
+    qrScannerInst = null;
+  }
+  const video = document.getElementById('qr-scanner-video');
+  if (video && video.srcObject) {
+    video.srcObject.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+  }
+}
+
+function initQRConnect() { refreshQR(); }
+
+function refreshQR() {
+  clearInterval(qrTimerInt);
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i=0; i<6; i++) code += chars[Math.floor(Math.random()*chars.length)];
+
+  const box     = document.getElementById('qr-code-box');
+  const codeEl  = document.getElementById('qr-code-display');
+  const timerEl = document.getElementById('qr-timer');
+  const statusEl= document.getElementById('qr-status');
+
+  if (!box && !timerEl) return; // phone view, no PC elements
+
+  if (codeEl) codeEl.textContent = code;
+
+  if (box) {
+    box.innerHTML = '';
+    try {
+      new QRCode(box, { text:'freezyos-connect:'+code, width:160, height:160, colorLight:'#ffffff', colorDark:'#000000' });
+    } catch(e) {
+      box.innerHTML = `<div style="font-size:24px;font-family:var(--font-mono);padding:20px;color:#000;letter-spacing:4px;font-weight:700">${code}</div>`;
+    }
+  }
+
+  // Save to Firebase Realtime DB
+  if (rtdb && userData) {
+    const sessionRef = rtdb.ref(`qr_sessions/${code}`);
+    sessionRef.set({ uid:userData.uid, name:userData.name, email:userData.email, expires:Date.now()+60000, connected:false });
+    sessionRef.child('connected').on('value', snap => {
+      if (snap.val() === true) {
+        if (statusEl) { statusEl.textContent = '✅ Device connected!'; statusEl.style.color='var(--accent-green)'; }
+        clearInterval(qrTimerInt);
+        notify('success','QR Connect','Device connected successfully!');
+        setTimeout(() => { sessionRef.remove(); refreshQR(); }, 3000);
+      }
+    });
+  }
+
+  let secs = 60;
+  if (timerEl) timerEl.textContent = secs;
+  if (statusEl) { statusEl.textContent = 'Waiting for connection...'; statusEl.style.color='var(--text-secondary)'; }
+  qrTimerInt = setInterval(() => {
+    secs--;
+    if (timerEl) timerEl.textContent = secs;
+    if (secs <= 0) {
+      clearInterval(qrTimerInt);
+      if (rtdb) rtdb.ref(`qr_sessions/${code}`).remove();
+      refreshQR();
+    }
+  }, 1000);
+}
+
+function connectWithCode(codeArg) {
+  const code = (codeArg || document.getElementById('qr-enter-code')?.value?.trim() || '').toUpperCase();
+  const statusEl = document.getElementById('qr-enter-status') || document.getElementById('qr-scan-status');
+  if (!code || code.length < 4) { if(statusEl) statusEl.textContent='Enter a valid code'; return; }
+  if (!rtdb) { notify('error','Error','Firebase not connected'); return; }
+
+  rtdb.ref(`qr_sessions/${code}`).get().then(snap => {
+    if (!snap.exists()) { if(statusEl) statusEl.textContent='❌ Code not found or expired'; return; }
+    const data = snap.val();
+    if (Date.now() > data.expires) {
+      if(statusEl) statusEl.textContent='❌ Code expired. Ask for a new one.';
+      rtdb.ref(`qr_sessions/${code}`).remove(); return;
+    }
+    rtdb.ref(`qr_sessions/${code}`).update({ connected:true }).then(() => {
+      if(statusEl) { statusEl.textContent = '✅ Connected to '+data.name+"'s session!"; statusEl.style.color='var(--accent-green)'; }
+      notify('success','Connected','Synced with '+data.name);
+      sessionStorage.setItem('freezy_user', JSON.stringify({ uid:data.uid, name:data.name, email:data.email, photo:'' }));
+      setTimeout(() => location.reload(), 2000);
+    });
+  }).catch(() => { if(statusEl) statusEl.textContent='❌ Connection error. Try again.'; });
+}
+
+// COMMUNITY
+function buildCommunity(){return `<div class="app-content"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(140px,20vw,160px),1fr));gap:12px">${[{name:'QR Generator',desc:'Generate QR codes',url:'https://qrfrz.xo.je',icon:'📷'},{name:'URL Shortener',desc:'Shorten URLs',url:'https://turl.xo.je',icon:'🔗'},{name:'WA Converter',desc:'WhatsApp links',url:'https://wame-frz.netlify.app',icon:'💬'},{name:'Image Host',desc:'Host images',url:'https://frzimage.xo.je',icon:'🖼️'}].map(t=>`<div style="background:rgba(0,0,0,0.2);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.2s" onclick="openIframeApp({id:'ct_${t.name.replace(/\W/g,'')}',name:'${t.name}',icon:'${t.icon}',url:'${t.url}'})" onmouseover="this.style.borderColor='rgba(0,212,255,0.4)'" onmouseout="this.style.borderColor='rgba(0,212,255,0.15)'"><div style="font-size:28px;margin-bottom:6px">${t.icon}</div><div style="font-weight:600;font-size:13px;color:var(--text-primary)">${t.name}</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t.desc}</div></div>`).join('')}</div></div>`;}
+
+// PUBLIC LIBRARY
+function buildLibrary(){return `<div class="app-content"><div style="display:flex;gap:8px;margin-bottom:12px"><input class="app-input" id="lib-search" placeholder="Search library..." style="flex:1" oninput="filterLibrary(this.value)"></div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:rgba(0,212,255,0.08)"><th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted);border-bottom:1px solid var(--border)">#</th><th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted);border-bottom:1px solid var(--border)">Title</th><th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted);border-bottom:1px solid var(--border)">Category</th><th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted);border-bottom:1px solid var(--border)">Download</th></tr></thead><tbody id="lib-body"><tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted)"><div style="margin-bottom:8px">📚 Public Library</div><div style="font-size:12px">Set VITE_SHEETS_API_KEY and VITE_SHEETS_ID in .env to load library data</div></td></tr></tbody></table></div></div>`;}
+function filterLibrary(q){document.querySelectorAll('#lib-body tr').forEach(r=>{r.style.display=!q||r.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';});}
+
+// =====================================================
+// SETTINGS - WALLPAPER FIXED
+// FIX: applyWallpaperSetting now calls applyWallpaper() which
+// uses the .active CSS class to properly show the wallpaper layer.
+// =====================================================
+function buildSettings(){return `<div class="settings-layout"><div class="settings-nav">${[{id:'appearance',icon:'🎨',label:'Appearance'},{id:'system',icon:'⚙️',label:'System'},{id:'permissions',icon:'🔐',label:'Permissions'},{id:'power',icon:'⚡',label:'Power'},{id:'about',icon:'ℹ️',label:'About'}].map((s,i)=>`<div class="settings-nav-item ${i===0?'active':''}" onclick="showSettingsPanel('${s.id}',this)">${s.icon} ${s.label}</div>`).join('')}</div><div class="settings-panel" id="settings-panel"></div></div>`;}
+
+const SETTINGS_PANELS={
+appearance:`
+  <div class="settings-section-title">WALLPAPER</div>
+  <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Paste a direct image URL (ends in .jpg .png .webp .gif)</div>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <input class="app-input" id="wallpaper-url" placeholder="https://example.com/image.jpg" style="flex:1">
+    <button class="app-btn" onclick="applyWallpaperSetting()">Apply</button>
+    <button class="app-btn danger" onclick="clearWallpaper()">Clear</button>
+  </div>
+  <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">Tip: Right-click any image → Copy image address, then paste above and hit Apply</div>
+  <div id="wallpaper-preview" style="width:100%;height:100px;border-radius:8px;border:1px solid var(--border);background-size:cover;background-position:center;margin-bottom:4px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:12px;transition:background-image 0.3s">Preview (changes desktop wallpaper instantly)</div>
+  <div style="font-size:10px;color:var(--text-muted);margin-bottom:16px">Note: wallpaper applies to the desktop background, not this settings window</div>
+  <div class="settings-section-title">DOCK</div>
+  <div class="setting-row">
+    <div><div class="setting-name">Dock Position</div><div class="setting-desc">Where the dock appears</div></div>
+    <select class="app-input" style="width:100px" id="dock-pos-select" onchange="changeDockPosition(this.value)">
+      <option value="bottom">Bottom</option>
+      <option value="left">Left</option>
+      <option value="right">Right</option>
+    </select>
+  </div>
+  <div class="setting-row" style="margin-top:8px">
+    <div><div class="setting-name">Manage Dock</div><div class="setting-desc">Drag icons in dock to reorder · Right-click to remove</div></div>
+    <button class="app-btn" onclick="openApp('files');toggleDrawer()">Open App Drawer</button>
+  </div>
+  <div class="settings-section-title" style="margin-top:12px">DOCK APPS</div>
+  <div id="dock-apps-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div>
+  <button class="app-btn" onclick="showSettingsPanel('appearance',document.querySelector('.settings-nav-item.active'))" style="margin-top:10px;font-size:10px;opacity:0.7">↺ Refresh list</button>`,
+system:`
+  <div class="settings-section-title">DISPLAY</div>
+  <div class="setting-row"><div><div class="setting-name">Brightness</div><div class="setting-desc">CSS overlay</div></div><div style="display:flex;align-items:center;gap:8px"><input type="range" min="10" max="100" id="sys-bright" style="width:120px" oninput="setBrightness(this.value);document.getElementById('sys-bright-val').textContent=this.value+'%'"><span id="sys-bright-val" style="font-size:12px;font-family:var(--font-mono);color:var(--accent-cyan);width:36px">100%</span></div></div>
+  <div class="setting-row"><div><div class="setting-name">Volume</div><div class="setting-desc">Web audio</div></div><div style="display:flex;align-items:center;gap:8px"><input type="range" min="0" max="100" id="sys-vol" style="width:120px" oninput="setVolume(this.value);document.getElementById('sys-vol-val').textContent=this.value+'%'"><span id="sys-vol-val" style="font-size:12px;font-family:var(--font-mono);color:var(--accent-cyan);width:36px">70%</span></div></div>
+  <div class="settings-section-title" style="margin-top:16px">SECURITY</div>
+  <div style="margin-bottom:8px;font-size:12px;color:var(--text-muted)">Lock Screen Password</div>
+  <div style="display:flex;gap:8px"><input class="app-input" type="password" id="lock-new-pass" placeholder="New password (blank = no password)" style="flex:1"><button class="app-btn" onclick="setLockPass()">Set</button></div>
+  <div class="setting-row" style="margin-top:12px"><div><div class="setting-name">Auto-Lock</div></div><select class="app-input" style="width:100px" onchange="osSettings.inactivityTimeout=parseInt(this.value);saveSettings()"><option value="5">5 min</option><option value="10">10 min</option><option value="15" selected>15 min</option><option value="30">30 min</option><option value="0">Never</option></select></div>`,
+permissions:`
+  <div class="settings-section-title">PERMISSIONS</div>
+  ${[{name:'Location',desc:'Weather, prayer times, maps'},{name:'Notifications',desc:'System alerts'},{name:'Camera',desc:'QR Connect scanner'},{name:'Microphone',desc:'Voice features'},{name:'Storage',desc:'Google Drive access'}].map(p=>`<div class="setting-row"><div><div class="setting-name">${p.name}</div><div class="setting-desc">${p.desc}</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>`).join('')}`,
+power:`
+  <div class="settings-section-title">POWER</div>
+  <div class="setting-row"><div><div class="setting-name">Lock Screen</div></div><button class="app-btn" onclick="lockScreen()">🔒 Lock Now</button></div>
+  <div class="setting-row"><div><div class="setting-name">Log Out</div></div><button class="app-btn danger" onclick="logout()">🚪 Log Out</button></div>
+  <div class="setting-row" style="opacity:0.5"><div><div class="setting-name">Sleep / Shutdown</div><div class="setting-desc">Available in .exe version only</div></div><button class="app-btn" disabled>💤 Sleep</button></div>`,
+about:`
+  <div style="display:flex;flex-direction:column;align-items:center;padding:20px;gap:12px;text-align:center">
+    <img src="https://frzimage.xo.je/images/freezy-os.png" style="width:clamp(48px,8vw,64px);height:clamp(48px,8vw,64px);filter:drop-shadow(0 0 15px rgba(0,212,255,0.5))">
+    <div style="font-family:var(--font-display);font-size:clamp(14px,2.5vw,18px);letter-spacing:3px;color:var(--accent-cyan)">FREEZY-OS</div>
+    <div style="font-size:12px;color:var(--text-muted)">Version 1.0.0 • Build 2026</div>
+    <div style="font-size:clamp(11px,1.8vw,13px);color:var(--text-secondary);max-width:320px;line-height:1.6">Browser-based desktop OS by FRZ Generations. Free Tools. Unlimited Possibilities.</div>
+    <div style="font-size:11px;color:var(--text-muted)">Designed and Developed under FRZ Generations (c) 2026</div>
+  </div>`
+};
+
+function showSettingsPanel(id, el) {
+  document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('settings-panel').innerHTML = SETTINGS_PANELS[id] || '';
+  if (id === 'system') {
+    const sb = document.getElementById('sys-bright'), sv = document.getElementById('sys-vol');
+    if (sb) { sb.value = osSettings.brightness; document.getElementById('sys-bright-val').textContent = osSettings.brightness+'%'; }
+    if (sv) { sv.value = osSettings.volume; document.getElementById('sys-vol-val').textContent = osSettings.volume+'%'; }
+  }
+  if (id === 'appearance') {
+    // Wallpaper
+    const wu = document.getElementById('wallpaper-url');
+    if (wu) {
+      wu.value = osSettings.wallpaper || '';
+      wu.oninput = function() {
+        const prev = document.getElementById('wallpaper-preview');
+        if (!prev) return;
+        if (this.value.trim()) {
+          prev.innerHTML = '';
+          prev.style.backgroundImage = 'url("' + this.value.trim() + '")';
+          prev.style.backgroundSize  = 'cover';
+          prev.style.backgroundPosition = 'center';
+        } else {
+          prev.style.backgroundImage = 'none';
+          prev.innerHTML = 'Preview (changes desktop wallpaper instantly)';
+        }
+      };
+      if (osSettings.wallpaper) {
+        const prev = document.getElementById('wallpaper-preview');
+        if (prev) { prev.style.backgroundImage=`url("${osSettings.wallpaper}")`; prev.textContent=''; }
+      }
+    }
+    // Dock position
+    const dp = document.getElementById('dock-pos-select');
+    if (dp) dp.value = osSettings.dockPosition || 'bottom';
+    // Dock apps list
+    _renderDockAppsList();
+  }
+}
+
+function _renderDockAppsList() {
+  const list = document.getElementById('dock-apps-list');
+  if (!list) return;
+  list.innerHTML = dockApps.map(id => {
+    const app = ALL_APPS.find(a => a.id === id);
+    if (!app) return '';
+    return `<div style="display:flex;align-items:center;gap:6px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15);border-radius:8px;padding:5px 10px;font-size:12px">
+      <span>${appIconHTML(app.icon,18)}</span>
+      <span style="color:var(--text-primary)">${app.name}</span>
+      <span onclick="removeFromDock('${id}');_renderDockAppsList()" style="margin-left:6px;color:var(--accent-red);cursor:pointer;font-size:14px;line-height:1" title="Remove">×</span>
+    </div>`;
+  }).join('');
+  if (!dockApps.length) list.innerHTML = '<div style="color:var(--text-muted);font-size:12px">No apps in dock</div>';
+}
+
+function changeDockPosition(pos) {
+  osSettings.dockPosition = pos;
+  saveSettings();
+  _applyDockPosition(pos);
+}
+
+function _applyDockPosition(pos) {
+  const dock    = document.getElementById('dock');
+  const desktop = document.getElementById('desktop');
+  const wLayer  = document.getElementById('windows-layer');
+  if (!dock) return;
+
+  // Docked size (pixels) - matches CSS --dock-h which is 72px default
+  const SZ = 72;
+  const GAP = 8;
+
+  // Reset dock inline styles fully
+  dock.removeAttribute('style');
+
+  // Base styles always applied
+  Object.assign(dock.style, {
+    position:'fixed', zIndex:'1000',
+    backdropFilter:'blur(24px)',
+    background:'rgba(8,13,20,0.88)',
+    border:'1px solid rgba(0,212,255,0.15)',
+    boxShadow:'0 8px 40px rgba(0,0,0,0.6)',
+    transition:'all 0.3s ease',
+    display:'flex', alignItems:'center', gap:'6px'
+  });
+
+  // Reset desktop padding
+  if (desktop) Object.assign(desktop.style, { paddingBottom:'', paddingLeft:'', paddingRight:'', paddingTop:'' });
+
+  if (pos === 'left') {
+    Object.assign(dock.style, {
+      flexDirection:'column',
+      left: GAP+'px', right:'', bottom:'',
+      top: '50%', transform: 'translateY(-50%)',
+      width: SZ+'px', height:'auto',
+      padding:'12px 0', borderRadius:'16px'
+    });
+    if (desktop) desktop.style.paddingLeft = (SZ + GAP*2) + 'px';
+
+  } else if (pos === 'right') {
+    Object.assign(dock.style, {
+      flexDirection:'column',
+      right: GAP+'px', left:'', bottom:'',
+      top: '50%', transform: 'translateY(-50%)',
+      width: SZ+'px', height:'auto',
+      padding:'12px 0', borderRadius:'16px'
+    });
+    if (desktop) desktop.style.paddingRight = (SZ + GAP*2) + 'px';
+
+  } else {
+    // bottom (default)
+    Object.assign(dock.style, {
+      flexDirection:'row',
+      bottom: GAP+'px', top:'', left:'50%', right:'',
+      transform:'translateX(-50%)',
+      height: SZ+'px', width:'auto',
+      padding:'0 12px', borderRadius:'16px'
+    });
+    if (desktop) desktop.style.paddingBottom = (SZ + GAP*2) + 'px';
+  }
+}
+
+// WALLPAPER APPLY - applies to desktop layer + updates preview
+function applyWallpaperSetting() {
+  const wu = document.getElementById('wallpaper-url');
+  const url = wu?.value?.trim();
+  if (!url) { notify('warning','Wallpaper','Paste a direct image URL first'); return; }
+  // Update preview in settings panel
+  const prev = document.getElementById('wallpaper-preview');
+  if (prev) {
+    prev.innerHTML = '';
+    prev.style.backgroundImage = 'url("' + url + '")';
+    prev.style.backgroundSize  = 'cover';
+    prev.style.backgroundPosition = 'center';
+  }
+  // Apply to actual desktop wallpaper layer
+  osSettings.wallpaper = url;
+  applyWallpaper(url);
+  saveUserSettings();
+}
+
+function setLockPass() {
+  const pass = document.getElementById('lock-new-pass')?.value || '';
+  osSettings.lockPassword = pass;
+  saveSettings();
+  notify('success','Password', pass ? 'Lock password set' : 'Password removed');
+}
+
+// ===== APP INIT AFTER RENDER =====
+function initAppAfterRender(id) {
+  if (id==='calendar')    renderCalendar();
+  if (id==='prayer')      loadPrayer();
+  if (id==='maps')        initMaps();
+  if (id==='whiteboard')  initWhiteboard();
+  if (id==='qrconnect')   initQRConnect();
+  if (id==='hijri')       initHijri();
+  if (id==='religiouscal') { const f=document.querySelector('#rel-tabs .tab'); if(f) showRelTab('islam',f); }
+  if (id==='converter')   updateConvUnits();
+  if (id==='settings')    { const f=document.querySelector('.settings-nav-item'); if(f) showSettingsPanel('appearance',f); }
+  if (id==='music')       initMusicPlayer();
+  if (id==='files')       initDriveAPI();
+}
+
+// ===== START =====
+window.addEventListener('load', initOS);
+document.addEventListener('contextmenu', e => {
+  if (!e.target.closest('#desktop') && !e.target.closest('.desk-icon')) e.preventDefault();
 });
 </script>
-
+<style>@keyframes winClose{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(0.94)}}</style>
 </body>
 </html>
