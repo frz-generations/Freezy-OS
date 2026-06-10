@@ -20,8 +20,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- QR Code generator -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<!-- QR Code scanner (ZXing) for phone-side scanning -->
-<script src="https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js" onerror="window._zxingFailed=true"></script>
+<!-- QR Code scanner (jsQR — reliable single-file library) -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" onerror="window._jsqrFailed=true"></script>
 <!-- Google API for Drive -->
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -2054,52 +2054,54 @@ function startQRScanner() {
   const btn    = document.getElementById('qr-scan-btn');
   if (!video) return;
 
-  // Check library loaded
-  if (window._zxingFailed || !window.ZXingBrowser) {
-    if (status) { status.textContent = 'Scanner library failed to load. Use Enter Code tab instead.'; status.style.color='var(--accent-red)'; }
+  if (window._jsqrFailed || typeof jsQR === 'undefined') {
+    if (status) { status.textContent = '❌ Scanner library not loaded. Use the Enter Code tab.'; status.style.color='var(--accent-red)'; }
     return;
   }
 
   stopQRScanner();
-
   if (btn)    { btn.textContent = '⏹ Stop Camera'; btn.onclick = stopQRScanner; }
   if (status) { status.textContent = 'Requesting camera...'; status.style.color='var(--text-muted)'; }
 
-  // Request camera permission first so we get a clear error message
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
     .then(stream => {
-      // Hand stream to video element so user sees feed immediately
       video.srcObject = stream;
       video.play().catch(()=>{});
-
       if (status) { status.textContent = 'Scanning... point at QR code'; status.style.color='var(--accent-cyan)'; }
 
-      // Use ZXing to decode from the live stream
-      qrScannerInst = new ZXingBrowser.BrowserQRCodeReader();
+      // jsQR needs a canvas to read frames from
+      const canvas = document.createElement('canvas');
+      const ctx    = canvas.getContext('2d');
+      let   scanning = true;
+      qrScannerInst  = { stop: () => { scanning = false; } };
 
-      // decodeOnceFromStream reads from an existing MediaStream
-      qrScannerInst.decodeOnceFromStream(stream, video)
-        .then(result => {
-          const text = result.getText();
-          const code = text.startsWith('freezyos-connect:') ? text.split(':')[1].trim() : text.trim();
-          stopQRScanner();
-          if (btn)    { btn.textContent = '📷 Start Camera'; btn.onclick = startQRScanner; }
-          if (status) { status.textContent = '✅ Code: ' + code; status.style.color='var(--accent-green)'; }
-          const inp = document.getElementById('qr-enter-code');
-          if (inp) inp.value = code;
-          connectWithCode(code);
-        })
-        .catch(err => {
-          // NotFound = scanning stopped cleanly (stopQRScanner called)
-          if (err && err.name !== 'NotFoundException' && err.name !== 'NotFoundError') {
-            if (status) { status.textContent = '❌ Scan error: ' + err.message; status.style.color='var(--accent-red)'; }
+      function scanFrame() {
+        if (!scanning) return;
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvas.width  = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const result    = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+          if (result) {
+            const text = result.data;
+            const code = text.startsWith('freezyos-connect:') ? text.split(':')[1].trim() : text.trim();
+            stopQRScanner();
+            if (btn)    { btn.textContent = '📷 Start Camera'; btn.onclick = startQRScanner; }
+            if (status) { status.textContent = '✅ Found: ' + code; status.style.color = 'var(--accent-green)'; }
+            const inp = document.getElementById('qr-enter-code');
+            if (inp) inp.value = code;
+            connectWithCode(code);
+            return;
           }
-          if (btn) { btn.textContent = '📷 Start Camera'; btn.onclick = startQRScanner; }
-        });
+        }
+        requestAnimationFrame(scanFrame);
+      }
+      requestAnimationFrame(scanFrame);
     })
     .catch(err => {
-      let msg = 'Camera error: ' + err.message;
-      if (err.name === 'NotAllowedError')  msg = 'Camera permission denied. Allow camera access and try again.';
+      let msg = err.message;
+      if (err.name === 'NotAllowedError')  msg = 'Camera permission denied. Tap Allow and try again.';
       if (err.name === 'NotFoundError')    msg = 'No camera found on this device.';
       if (err.name === 'NotReadableError') msg = 'Camera is in use by another app.';
       if (status) { status.textContent = '❌ ' + msg; status.style.color='var(--accent-red)'; }
@@ -2109,22 +2111,16 @@ function startQRScanner() {
 
 function stopQRScanner() {
   if (qrScannerInst) {
-    try { qrScannerInst.reset(); } catch(e) {}
-    try { qrScannerInst.stopAsyncDecode(); } catch(e) {}
+    try { qrScannerInst.stop(); } catch(e) {}
     qrScannerInst = null;
   }
   const video = document.getElementById('qr-scanner-video');
-  if (video) {
-    if (video.srcObject) {
-      video.srcObject.getTracks().forEach(t => { try { t.stop(); } catch(e) {} });
-      video.srcObject = null;
-    }
-    video.load(); // reset the element
+  if (video && video.srcObject) {
+    video.srcObject.getTracks().forEach(t => { try { t.stop(); } catch(e) {} });
+    video.srcObject = null;
   }
-  const btn    = document.getElementById('qr-scan-btn');
-  const status = document.getElementById('qr-scan-status');
-  if (btn)    { btn.textContent = '📷 Start Camera'; btn.onclick = startQRScanner; }
-  if (status && status.textContent === 'Scanning... point at QR code') status.textContent = '';
+  const btn = document.getElementById('qr-scan-btn');
+  if (btn)  { btn.textContent = '📷 Start Camera'; btn.onclick = startQRScanner; }
 }
 
 function initQRConnect() { refreshQR(); }
