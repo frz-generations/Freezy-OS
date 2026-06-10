@@ -21,7 +21,7 @@
 <!-- QR Code generator -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <!-- QR Code scanner (ZXing) for phone-side scanning -->
-<script src="https://unpkg.com/@zxing/browser@latest/umd/index.min.js"></script>
+<script src="https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js" onerror="window._zxingFailed=true"></script>
 <!-- Google API for Drive -->
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -726,23 +726,17 @@ function applyWallpaper(url) {
   layer.style.backgroundRepeat   = 'no-repeat';
   layer.classList.add('active');
   notify('success', 'Wallpaper', 'Wallpaper applied!');
-  // Save to Firestore
-  if (typeof db !== 'undefined' && db && userData && userData.uid && userData.uid !== 'demo') {
-    db.collection('users').doc(userData.uid).set({ wallpaper: url }, { merge:true }).catch(()=>{});
-  }
+  // Wallpaper is saved via saveUserSettings() — called by applyWallpaperSetting()
 }
 
 function clearWallpaper() {
   osSettings.wallpaper = '';
   applyWallpaper('');
-  saveSettings();
-  if (db && userData.uid !== 'demo') {
-    db.collection('users').doc(userData.uid).set({ wallpaper:'' }, { merge:true }).catch(()=>{});
-  }
+  saveUserSettings(); // saves to Firestore via onSnapshot — syncs to all devices
   const wu = document.getElementById('wallpaper-url');
   if (wu) wu.value = '';
   const prev = document.getElementById('wallpaper-preview');
-  if (prev) { prev.style.backgroundImage = 'none'; prev.textContent = 'Wallpaper preview'; }
+  if (prev) { prev.style.backgroundImage = 'none'; prev.innerHTML = 'Preview'; }
   notify('info','Wallpaper','Wallpaper cleared');
 }
 
@@ -757,14 +751,36 @@ function listenBlacklist() {
     if (snap.exists() && snap.val() === true) showSuspended();
   });
 }
+let _userSettingsUnsub = null;
 function loadUserSettings() {
-  db.collection('users').doc(userData.uid).get().then(doc => {
-    if (doc.exists) {
+  if (!db || !userData || userData.uid === 'demo') return;
+  // Use onSnapshot so wallpaper and settings sync live across all devices
+  if (_userSettingsUnsub) _userSettingsUnsub(); // detach old listener
+  _userSettingsUnsub = db.collection('users').doc(userData.uid).onSnapshot(doc => {
+    if (!doc.exists) return;
+    const d = doc.data();
+    // Wallpaper — apply only if different from current to avoid flicker
+    if (d.wallpaper && d.wallpaper !== osSettings.wallpaper) {
+      osSettings.wallpaper = d.wallpaper;
+      applyWallpaper(d.wallpaper);
+    } else if (d.wallpaper === '' && osSettings.wallpaper !== '') {
+      osSettings.wallpaper = '';
+      applyWallpaper('');
+    }
+    // Other OS settings (brightness, volume, lock etc.)
+    if (d.osSettings) {
+      osSettings = { ...osSettings, ...d.osSettings };
+      applySettings();
+    }
+  }, () => {
+    // Fallback to one-time get if listener fails (offline mode)
+    db.collection('users').doc(userData.uid).get().then(doc => {
+      if (!doc.exists) return;
       const d = doc.data();
       if (d.wallpaper) { osSettings.wallpaper = d.wallpaper; applyWallpaper(d.wallpaper); }
       if (d.osSettings) { osSettings = {...osSettings,...d.osSettings}; applySettings(); }
-    }
-  }).catch(()=>{});
+    }).catch(()=>{});
+  });
 }
 function saveUserSettings() {
   saveSettings();
@@ -1540,6 +1556,89 @@ function buildFileManager() {
   </div>`;
 }
 
+// File Manager welcome popup — shown once per session
+let _fmWelcomeShown = false;
+function showFMWelcome() {
+  if (_fmWelcomeShown) { initDriveAPI(); return; }
+  _fmWelcomeShown = true;
+
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'fm-welcome-overlay';
+  overlay.style.cssText = [
+    'position:fixed','inset:0','z-index:9998',
+    'background:rgba(2,4,8,0.85)','backdrop-filter:blur(12px)',
+    'display:flex','align-items:center','justify-content:center',
+    'animation:fadeIn 0.3s ease'
+  ].join(';');
+
+  overlay.innerHTML = `
+    <div style="
+      background:linear-gradient(135deg,rgba(8,13,20,0.98),rgba(13,21,35,0.98));
+      border:1px solid rgba(0,212,255,0.25);
+      border-radius:20px;
+      padding:32px;
+      max-width:460px;
+      width:90%;
+      box-shadow:0 24px 80px rgba(0,0,0,0.8),0 0 40px rgba(0,212,255,0.06);
+      font-family:var(--font-body);
+    ">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+        <div style="font-size:36px">☁️</div>
+        <div>
+          <div style="font-family:var(--font-display);font-size:16px;letter-spacing:3px;color:var(--accent-cyan)">FILE MANAGER</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Powered by Google Drive</div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:20px">
+        Your personal cloud storage is connected to <b style="color:var(--text-primary)">Google Drive</b>. All files are saved inside:
+        <div style="background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.15);border-radius:8px;padding:8px 14px;margin:10px 0;font-family:var(--font-mono);font-size:12px;color:var(--accent-cyan)">
+          Software / Users / ${userData?.name || 'You'} /
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+        ${[
+          ['🖼️','Images & Wallpapers','Upload any .jpg .png .webp and use as wallpaper'],
+          ['🎵','Music & Audio','Store your music and play it in the Music Player'],
+          ['🎬','Videos','Save your videos for streaming inside the OS'],
+          ['📄','Documents & Files','Keep your important docs safe in the cloud'],
+          ['💾','App Data','Settings and data synced across all your devices'],
+          ['🔒','Private & Secure','Only you can access your folder — no one else']
+        ].map(([icon, title, desc]) => `
+          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px">
+            <div style="font-size:20px;margin-bottom:4px">${icon}</div>
+            <div style="font-size:12px;color:var(--text-primary);font-weight:600;margin-bottom:2px">${title}</div>
+            <div style="font-size:10px;color:var(--text-muted);line-height:1.5">${desc}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div style="background:rgba(255,200,0,0.06);border:1px solid rgba(255,200,0,0.15);border-radius:10px;padding:12px 14px;margin-bottom:20px;font-size:11px;color:rgba(255,200,0,0.8);line-height:1.6">
+        ⚠️ <b>Do not store passwords, private keys, or highly sensitive personal data</b> here. This folder uses your personal Google Drive — treat it like any cloud folder.
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button onclick="document.getElementById('fm-welcome-overlay').remove();initDriveAPI();" style="
+          flex:1;background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(0,212,255,0.08));
+          border:1px solid rgba(0,212,255,0.35);color:var(--accent-cyan);
+          padding:11px;border-radius:10px;cursor:pointer;
+          font-family:var(--font-display);font-size:11px;letter-spacing:2px;
+          transition:background 0.2s
+        ">CONNECT DRIVE</button>
+        <button onclick="document.getElementById('fm-welcome-overlay').remove();" style="
+          background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+          color:var(--text-muted);padding:11px 18px;border-radius:10px;cursor:pointer;
+          font-family:var(--font-display);font-size:11px;letter-spacing:1px
+        ">LATER</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+}
+
 // Initialize Google Drive API
 function initDriveAPI() {
   if (driveInited) { fmLoadRoot(); return; }
@@ -1897,10 +1996,10 @@ function buildQRConnect() {
 
     <!-- Scan tab -->
     <div id="qr-panel-scan" style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%">
-      <video id="qr-scanner-video" class="qr-scanner-video" playsinline></video>
+      <video id="qr-scanner-video" class="qr-scanner-video" playsinline muted></video>
       <button class="app-btn" id="qr-scan-btn" onclick="startQRScanner()">📷 Start Camera</button>
-      <div style="font-size:12px;color:var(--text-muted);text-align:center">Point your camera at the QR code shown on the PC</div>
-      <div style="font-size:13px;color:var(--accent-cyan)" id="qr-scan-status"></div>
+      <div style="font-size:11px;color:var(--text-muted);text-align:center;line-height:1.5">Point your camera at the QR code on the PC.<br>Allow camera access when prompted.</div>
+      <div style="font-size:12px;text-align:center;min-height:18px" id="qr-scan-status"></div>
     </div>
 
     <!-- Enter code tab -->
@@ -1923,51 +2022,82 @@ function switchQRTab(tab) {
 }
 
 function startQRScanner() {
-  const video = document.getElementById('qr-scanner-video');
-  const status= document.getElementById('qr-scan-status');
-  const btn   = document.getElementById('qr-scan-btn');
+  const video  = document.getElementById('qr-scanner-video');
+  const status = document.getElementById('qr-scan-status');
+  const btn    = document.getElementById('qr-scan-btn');
   if (!video) return;
-  if (!window.ZXingBrowser) { if(status) status.textContent='Scanner library not loaded. Use Enter Code tab.'; return; }
+
+  // Check library loaded
+  if (window._zxingFailed || !window.ZXingBrowser) {
+    if (status) { status.textContent = 'Scanner library failed to load. Use Enter Code tab instead.'; status.style.color='var(--accent-red)'; }
+    return;
+  }
 
   stopQRScanner();
 
-  const hints = new Map();
-  hints.set(2, ['QR_CODE']); // DecodeHintType.POSSIBLE_FORMATS
+  if (btn)    { btn.textContent = '⏹ Stop Camera'; btn.onclick = stopQRScanner; }
+  if (status) { status.textContent = 'Requesting camera...'; status.style.color='var(--text-muted)'; }
 
-  try {
-    qrScannerInst = new ZXingBrowser.BrowserQRCodeReader();
-    qrScannerInst.decodeFromVideoDevice(null, 'qr-scanner-video', (result, err) => {
-      if (result) {
-        const text = result.getText();
-        // Extract code from "freezyos-connect:XXXXXX" format
-        const code = text.startsWith('freezyos-connect:') ? text.split(':')[1] : text;
-        stopQRScanner();
-        if(btn) btn.textContent = '📷 Start Camera';
-        if(status){ status.textContent = '✅ Code found: '+code; status.style.color='var(--accent-green)'; }
-        // Auto-connect
-        document.getElementById('qr-enter-code') ? document.getElementById('qr-enter-code').value=code : null;
-        connectWithCode(code);
-      }
-    }).catch(e => {
-      if(status) status.textContent = 'Camera error: '+e.message;
+  // Request camera permission first so we get a clear error message
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      // Hand stream to video element so user sees feed immediately
+      video.srcObject = stream;
+      video.play().catch(()=>{});
+
+      if (status) { status.textContent = 'Scanning... point at QR code'; status.style.color='var(--accent-cyan)'; }
+
+      // Use ZXing to decode from the live stream
+      qrScannerInst = new ZXingBrowser.BrowserQRCodeReader();
+
+      // decodeOnceFromStream reads from an existing MediaStream
+      qrScannerInst.decodeOnceFromStream(stream, video)
+        .then(result => {
+          const text = result.getText();
+          const code = text.startsWith('freezyos-connect:') ? text.split(':')[1].trim() : text.trim();
+          stopQRScanner();
+          if (btn)    { btn.textContent = '📷 Start Camera'; btn.onclick = startQRScanner; }
+          if (status) { status.textContent = '✅ Code: ' + code; status.style.color='var(--accent-green)'; }
+          const inp = document.getElementById('qr-enter-code');
+          if (inp) inp.value = code;
+          connectWithCode(code);
+        })
+        .catch(err => {
+          // NotFound = scanning stopped cleanly (stopQRScanner called)
+          if (err && err.name !== 'NotFoundException' && err.name !== 'NotFoundError') {
+            if (status) { status.textContent = '❌ Scan error: ' + err.message; status.style.color='var(--accent-red)'; }
+          }
+          if (btn) { btn.textContent = '📷 Start Camera'; btn.onclick = startQRScanner; }
+        });
+    })
+    .catch(err => {
+      let msg = 'Camera error: ' + err.message;
+      if (err.name === 'NotAllowedError')  msg = 'Camera permission denied. Allow camera access and try again.';
+      if (err.name === 'NotFoundError')    msg = 'No camera found on this device.';
+      if (err.name === 'NotReadableError') msg = 'Camera is in use by another app.';
+      if (status) { status.textContent = '❌ ' + msg; status.style.color='var(--accent-red)'; }
+      if (btn)    { btn.textContent = '📷 Start Camera'; btn.onclick = startQRScanner; }
     });
-    if(btn) btn.textContent = '⏹ Stop Camera';
-    if(status){ status.textContent = 'Scanning...'; status.style.color='var(--accent-cyan)'; }
-  } catch(e) {
-    if(status) status.textContent = 'Could not start camera. Check permissions.';
-  }
 }
 
 function stopQRScanner() {
   if (qrScannerInst) {
     try { qrScannerInst.reset(); } catch(e) {}
+    try { qrScannerInst.stopAsyncDecode(); } catch(e) {}
     qrScannerInst = null;
   }
   const video = document.getElementById('qr-scanner-video');
-  if (video && video.srcObject) {
-    video.srcObject.getTracks().forEach(t => t.stop());
-    video.srcObject = null;
+  if (video) {
+    if (video.srcObject) {
+      video.srcObject.getTracks().forEach(t => { try { t.stop(); } catch(e) {} });
+      video.srcObject = null;
+    }
+    video.load(); // reset the element
   }
+  const btn    = document.getElementById('qr-scan-btn');
+  const status = document.getElementById('qr-scan-status');
+  if (btn)    { btn.textContent = '📷 Start Camera'; btn.onclick = startQRScanner; }
+  if (status && status.textContent === 'Scanning... point at QR code') status.textContent = '';
 }
 
 function initQRConnect() { refreshQR(); }
@@ -1996,19 +2126,40 @@ function refreshQR() {
     }
   }
 
-  // Save to Firebase Realtime DB
-  if (rtdb && userData) {
-    const sessionRef = rtdb.ref(`qr_sessions/${code}`);
-    sessionRef.set({ uid:userData.uid, name:userData.name, email:userData.email, expires:Date.now()+60000, connected:false });
-    sessionRef.child('connected').on('value', snap => {
-      if (snap.val() === true) {
-        if (statusEl) { statusEl.textContent = '✅ Device connected!'; statusEl.style.color='var(--accent-green)'; }
-        clearInterval(qrTimerInt);
-        notify('success','QR Connect','Device connected successfully!');
-        setTimeout(() => { sessionRef.remove(); refreshQR(); }, 3000);
+  // Save to Firebase Realtime DB — retry until rtdb is ready
+  function _writeQRSession(attempts) {
+    if (!rtdb || !userData) {
+      if (attempts < 15) { setTimeout(() => _writeQRSession(attempts+1), 400); return; }
+      if (statusEl) { statusEl.textContent = '❌ No database connection. Check Firebase setup.'; statusEl.style.color='var(--accent-red)'; }
+      return;
+    }
+    const sessionRef = rtdb.ref('qr_sessions/' + code);
+    sessionRef.set({
+      uid: userData.uid, name: userData.name,
+      email: userData.email, expires: Date.now()+60000, connected: false
+    }).then(() => {
+      if (statusEl) { statusEl.textContent = 'Waiting for connection...'; statusEl.style.color='var(--text-secondary)'; }
+      sessionRef.child('connected').on('value', snap => {
+        if (snap.val() === true) {
+          if (statusEl) { statusEl.textContent = '✅ Device connected!'; statusEl.style.color='var(--accent-green)'; }
+          clearInterval(qrTimerInt);
+          notify('success','QR Connect','Device connected!');
+          setTimeout(() => { sessionRef.remove(); refreshQR(); }, 3000);
+        }
+      });
+    }).catch(err => {
+      if (statusEl) {
+        statusEl.textContent = '❌ ' + (err.code === 'PERMISSION_DENIED'
+          ? 'Database rules blocked write. Enable Realtime DB rules in Firebase Console.'
+          : 'Connection error: ' + err.message);
+        statusEl.style.color = 'var(--accent-red)';
       }
+      notify('error','QR Connect', err.code === 'PERMISSION_DENIED'
+        ? 'DB permission denied — set rules to allow write'
+        : err.message);
     });
   }
+  _writeQRSession(0);
 
   let secs = 60;
   if (timerEl) timerEl.textContent = secs;
@@ -2273,7 +2424,7 @@ function initAppAfterRender(id) {
   if (id==='converter')   updateConvUnits();
   if (id==='settings')    { const f=document.querySelector('.settings-nav-item'); if(f) showSettingsPanel('appearance',f); }
   if (id==='music')       initMusicPlayer();
-  if (id==='files')       initDriveAPI();
+  if (id==='files')       showFMWelcome();
 }
 
 // ===== START =====
