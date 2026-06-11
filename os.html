@@ -1481,18 +1481,36 @@ function fmSetStatus(msg){const el=document.getElementById('fm-status');if(el)el
 function fmShowMessage(icon,title,html){const grid=document.getElementById('fm-grid');if(grid)grid.innerHTML=`<div class="fm-empty"><div style="font-size:40px">${icon}</div><div style="font-size:15px;color:var(--text-secondary);font-weight:600;margin-top:8px">${title}</div><div style="font-size:12px;color:var(--text-muted);margin-top:8px;max-width:340px;line-height:1.7;text-align:center">${html}</div></div>`;}
 
 // ══════════════════════════════════════════════════
-// FIX 4 — QR CONNECT with SYNC DIRECTION
+// ══════════════════════════════════════════════════
+// QR CONNECT — FULLY REWRITTEN
+// ── Flow ──────────────────────────────────────────
+// PC side:
+//   1. refreshQR() writes session to RTDB, shows QR + code
+//   2. onValue watches ONLY connected flag → shows modal
+//   3. doQRSync(direction) is called when user picks option
+//      → writes payload to RTDB (no re-fetch, no race)
+//      → executes PC-side action directly
+//
+// Phone side:
+//   1. connectWithCode() finds session, marks connected:true
+//   2. onValue watches for payload field (not syncDirection)
+//      → payload contains everything phone needs to act
+//   3. Executes phone-side action immediately on payload arrival
+//
+// Key: PC and phone each watch ONE field change, act once,
+// then detach listener. No _done flag, no double execution.
 // ══════════════════════════════════════════════════
 let qrTimerInt    = null;
 let qrScannerInst = null;
-let _qrConnectedCode = null; // stores code after connection for direction sync
+let _qrSessionRef = null;  // PC's active RTDB ref
+let _qrListening  = false; // prevents double listener
 
 function buildQRConnect() {
-  const isMobileDevice = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-  return `<div class="qr-wrap">
-    <div style="font-family:var(--font-display);font-size:12px;letter-spacing:3px;color:var(--accent-cyan)">QR CONNECT</div>
-    ${!isMobileDevice ? `
-      <!-- PC VIEW -->
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  if (!isMobile) {
+    // PC VIEW
+    return `<div class="qr-wrap">
+      <div style="font-family:var(--font-display);font-size:12px;letter-spacing:3px;color:var(--accent-cyan)">QR CONNECT</div>
       <div style="text-align:center;font-size:13px;color:var(--text-secondary)">Scan the QR code or enter the code on your phone</div>
       <div id="qr-code-box" class="qr-code-box"></div>
       <div style="font-size:11px;color:var(--text-muted);margin:2px 0">— OR ENTER ON YOUR PHONE —</div>
@@ -1501,11 +1519,14 @@ function buildQRConnect() {
         <div class="qr-timer" id="qr-timer">60</div>
         <div style="font-size:11px;color:var(--text-muted)">sec remaining</div>
       </div>
-      <div style="font-size:13px;min-height:18px" id="qr-status">Waiting for connection...</div>
-      <div class="qr-info">Code expires every 60 seconds. On your phone, open QR Connect and scan or enter the 6-character code.</div>
+      <div style="font-size:13px;min-height:18px;text-align:center" id="qr-status">Waiting for connection...</div>
+      <div class="qr-info">Code expires every 60 seconds. On your phone open QR Connect and scan or enter the code.</div>
       <button class="app-btn" onclick="refreshQR()">🔄 New Code</button>
-    ` : `
-      <!-- PHONE VIEW -->
+    </div>`;
+  } else {
+    // PHONE VIEW
+    return `<div class="qr-wrap">
+      <div style="font-family:var(--font-display);font-size:12px;letter-spacing:3px;color:var(--accent-cyan)">QR CONNECT</div>
       <div class="qr-tabs">
         <div class="qr-tab active" id="qr-tab-scan" onclick="switchQRTab('scan')">📷 Scan QR</div>
         <div class="qr-tab" id="qr-tab-enter" onclick="switchQRTab('enter')">⌨️ Enter Code</div>
@@ -1513,17 +1534,18 @@ function buildQRConnect() {
       <div id="qr-panel-scan" style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%">
         <video id="qr-scanner-video" class="qr-scanner-video" playsinline muted></video>
         <button class="app-btn" id="qr-scan-btn" onclick="startQRScanner()">📷 Start Camera</button>
-        <div style="font-size:11px;color:var(--text-muted);text-align:center;line-height:1.5">Point your camera at the QR code on the PC.<br>Allow camera access when prompted.</div>
+        <div style="font-size:11px;color:var(--text-muted);text-align:center;line-height:1.5">Point your camera at the QR code on the PC.</div>
         <div style="font-size:12px;text-align:center;min-height:18px" id="qr-scan-status"></div>
       </div>
       <div id="qr-panel-enter" style="display:none;flex-direction:column;align-items:center;gap:12px;width:100%">
-        <div style="font-size:13px;color:var(--text-secondary);text-align:center">Enter the 6-character code shown on the PC screen</div>
-        <input class="qr-connect-input" id="qr-enter-code" placeholder="E.g. A3X9KZ" maxlength="6" oninput="this.value=this.value.toUpperCase()" style="font-size:24px;letter-spacing:6px;">
+        <div style="font-size:13px;color:var(--text-secondary);text-align:center">Enter the 6-character code shown on the PC</div>
+        <input class="qr-connect-input" id="qr-enter-code" placeholder="A3X9KZ" maxlength="6"
+          oninput="this.value=this.value.toUpperCase()" style="font-size:24px;letter-spacing:6px;">
         <button class="app-btn" style="width:200px" onclick="connectWithCode()">✅ Connect</button>
-        <div style="font-size:12px;color:var(--accent-cyan)" id="qr-enter-status"></div>
+        <div style="font-size:12px;color:var(--accent-cyan);text-align:center;line-height:1.6" id="qr-enter-status"></div>
       </div>
-    `}
-  </div>`;
+    </div>`;
+  }
 }
 
 function switchQRTab(tab) {
@@ -1534,7 +1556,7 @@ function switchQRTab(tab) {
   if (tab !== 'scan') stopQRScanner();
 }
 
-// ── QR Scanner (phone) ─────────────────────────────
+// ── QR Scanner (phone camera) ──────────────────────
 function startQRScanner() {
   const video  = document.getElementById('qr-scanner-video');
   const status = document.getElementById('qr-scan-status');
@@ -1549,24 +1571,23 @@ function startQRScanner() {
   if (status) { status.textContent='Requesting camera...'; status.style.color='var(--text-muted)'; }
   navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } })
     .then(stream => {
-      video.srcObject = stream;
-      video.play().catch(()=>{});
-      if (status) { status.textContent='Scanning... point at QR code'; status.style.color='var(--accent-cyan)'; }
-      const canvas=document.createElement('canvas');const ctx=canvas.getContext('2d');let scanning=true;
-      qrScannerInst = { stop:()=>{ scanning=false; } };
+      video.srcObject=stream; video.play().catch(()=>{});
+      if (status) { status.textContent='Scanning...'; status.style.color='var(--accent-cyan)'; }
+      const canvas=document.createElement('canvas'), ctx=canvas.getContext('2d');
+      let scanning=true;
+      qrScannerInst={ stop:()=>{ scanning=false; } };
       function scanFrame(){
-        if (!scanning) return;
-        if (video.readyState===video.HAVE_ENOUGH_DATA) {
-          canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+        if(!scanning)return;
+        if(video.readyState===video.HAVE_ENOUGH_DATA){
+          canvas.width=video.videoWidth; canvas.height=video.videoHeight;
           ctx.drawImage(video,0,0,canvas.width,canvas.height);
-          const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
-          const result=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'dontInvert'});
-          if (result) {
-            const text=result.data;
-            const code=text.startsWith('freezyos-connect:')?text.split(':')[1].trim():text.trim();
+          const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+          const result=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
+          if(result){
+            const raw=result.data;
+            const code=(raw.startsWith('freezyos-connect:')?raw.split(':')[1]:raw).trim().toUpperCase();
             stopQRScanner();
-            if (btn)    { btn.textContent='📷 Start Camera'; btn.onclick=startQRScanner; }
-            if (status) { status.textContent='✅ Found: '+code; status.style.color='var(--accent-green)'; }
+            if(status){status.textContent='✅ Code found: '+code;status.style.color='var(--accent-green)';}
             const inp=document.getElementById('qr-enter-code');if(inp)inp.value=code;
             connectWithCode(code);
             return;
@@ -1576,198 +1597,254 @@ function startQRScanner() {
       }
       requestAnimationFrame(scanFrame);
     })
-    .catch(err => {
+    .catch(err=>{
       let msg=err.message;
-      if(err.name==='NotAllowedError')msg='Camera permission denied. Tap Allow and try again.';
-      if(err.name==='NotFoundError')msg='No camera found on this device.';
-      if(err.name==='NotReadableError')msg='Camera is in use by another app.';
+      if(err.name==='NotAllowedError')msg='Camera permission denied.';
+      if(err.name==='NotFoundError')msg='No camera found.';
+      if(err.name==='NotReadableError')msg='Camera in use by another app.';
       if(status){status.textContent='❌ '+msg;status.style.color='var(--accent-red)';}
       if(btn){btn.textContent='📷 Start Camera';btn.onclick=startQRScanner;}
     });
 }
 function stopQRScanner(){
   if(qrScannerInst){try{qrScannerInst.stop();}catch(e){}qrScannerInst=null;}
-  const video=document.getElementById('qr-scanner-video');
-  if(video&&video.srcObject){video.srcObject.getTracks().forEach(t=>{try{t.stop();}catch(e){}});video.srcObject=null;}
-  const btn=document.getElementById('qr-scan-btn');if(btn){btn.textContent='📷 Start Camera';btn.onclick=startQRScanner;}
+  const v=document.getElementById('qr-scanner-video');
+  if(v&&v.srcObject){v.srcObject.getTracks().forEach(t=>{try{t.stop();}catch(e){}});v.srcObject=null;}
+  const btn=document.getElementById('qr-scan-btn');
+  if(btn){btn.textContent='📷 Start Camera';btn.onclick=startQRScanner;}
 }
 
-// ── PC: generate and display QR ────────────────────
-function initQRConnect() { refreshQR(); }
+// ── PC: generate QR code + write session ──────────
+function initQRConnect(){ refreshQR(); }
 
-function refreshQR() {
+function refreshQR(){
   clearInterval(qrTimerInt);
+  // Detach old listener
+  if(_qrSessionRef){ try{_qrSessionRef.off('value');}catch(e){} _qrSessionRef=null; }
+  _qrListening=false;
+
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code='';for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+  let code=''; for(let i=0;i<6;i++) code+=chars[Math.floor(Math.random()*chars.length)];
 
-  const box     = document.getElementById('qr-code-box');
-  const codeEl  = document.getElementById('qr-code-display');
-  const timerEl = document.getElementById('qr-timer');
-  const statusEl= document.getElementById('qr-status');
+  const box=document.getElementById('qr-code-box');
+  const codeEl=document.getElementById('qr-code-display');
+  const timerEl=document.getElementById('qr-timer');
+  const statusEl=document.getElementById('qr-status');
 
-  if (!box && !timerEl) return; // phone view, no PC elements
+  // PC view elements not present on phone — exit silently
+  if(!box && !timerEl) return;
 
-  if (codeEl) codeEl.textContent = code;
-  if (box) {
+  if(codeEl) codeEl.textContent=code;
+  if(box){
     box.innerHTML='';
-    try { new QRCode(box,{text:'freezyos-connect:'+code,width:160,height:160,colorLight:'#ffffff',colorDark:'#000000'}); }
-    catch(e) { box.innerHTML=`<div style="font-size:24px;font-family:var(--font-mono);padding:20px;color:#000;letter-spacing:4px;font-weight:700">${code}</div>`; }
+    try{ new QRCode(box,{text:'freezyos-connect:'+code,width:160,height:160,colorLight:'#ffffff',colorDark:'#000000'}); }
+    catch(e){ box.innerHTML='<div style="font-size:28px;font-family:monospace;padding:16px;color:#000;letter-spacing:4px;font-weight:700">'+code+'</div>'; }
   }
 
-  function _writeQRSession(attempts) {
-    if (!rtdb || !userData) {
-      if (attempts<15) { setTimeout(()=>_writeQRSession(attempts+1),400); return; }
-      if(statusEl){statusEl.textContent='❌ No database connection.';statusEl.style.color='var(--accent-red)';}
+  function _write(attempts){
+    if(!rtdb||!userData){
+      if(attempts<20){setTimeout(()=>_write(attempts+1),400);return;}
+      if(statusEl){statusEl.textContent='❌ No Firebase connection.';statusEl.style.color='var(--accent-red)';}
       return;
     }
-    const sessionRef = rtdb.ref('qr_sessions/'+code);
-    sessionRef.set({
-      uid: userData.uid, name: userData.name, email: userData.email,
-      expires: Date.now()+60000, connected: false, syncDirection: null
-    }).then(() => {
+    _qrSessionRef=rtdb.ref('qr_sessions/'+code);
+    // Write session — store PC user info so phone knows who they're connecting to
+    _qrSessionRef.set({
+      pcUid:    userData.uid,
+      pcName:   userData.name,
+      pcEmail:  userData.email,
+      pcPhoto:  userData.photo||'',
+      pcWallpaper: osSettings.wallpaper||'',
+      expires:  Date.now()+60000,
+      connected: false,
+      payload:  null   // phone writes here; PC writes here for pc_to_phone
+    }).then(()=>{
       if(statusEl){statusEl.textContent='Waiting for connection...';statusEl.style.color='var(--text-secondary)';}
+      if(_qrListening)return;
+      _qrListening=true;
 
-      // FIX 4: PC listens for 'connected' flag, then shows sync direction modal
-      sessionRef.on('value', snap => {
-        if (!snap.exists()) return;
-        const d = snap.val();
-        if (d.connected === true && !_qrConnectedCode) {
-          _qrConnectedCode = code;
+      // PC listens ONLY for connected:true, then stops and shows modal
+      _qrSessionRef.on('value', snap=>{
+        if(!snap.exists())return;
+        const d=snap.val();
+        if(d.connected===true && !d._modalShown){
+          // Prevent double trigger
+          _qrSessionRef.update({_modalShown:true});
+          _qrSessionRef.off('value');
+          _qrListening=false;
           clearInterval(qrTimerInt);
-          if(statusEl){statusEl.textContent='✅ Device connected!';statusEl.style.color='var(--accent-green)';}
+          if(statusEl){statusEl.textContent='✅ Phone connected! Choose sync direction below.';statusEl.style.color='var(--accent-green)';}
           notify('success','QR Connect','Phone connected — choose sync direction');
-          // Show sync direction modal on PC
           _showQRSyncModal(code, d);
         }
-        // If phone chose a direction, execute it
-        if (d.syncDirection) {
-          _executeQRSyncOnPC(d.syncDirection, d, sessionRef);
-        }
       });
-    }).catch(err => {
-      if(statusEl){statusEl.textContent='❌ '+(err.code==='PERMISSION_DENIED'?'DB rules blocked write — check Firebase Console.':'Connection error: '+err.message);statusEl.style.color='var(--accent-red)';}
-      notify('error','QR Connect', err.message);
+    }).catch(err=>{
+      const msg=err.code==='PERMISSION_DENIED'
+        ? 'DB permission denied — update Realtime DB rules in Firebase Console'
+        : err.message;
+      if(statusEl){statusEl.textContent='❌ '+msg;statusEl.style.color='var(--accent-red)';}
+      notify('error','QR Connect',msg);
     });
   }
-  _writeQRSession(0);
+  _write(0);
 
-  let secs=60;if(timerEl)timerEl.textContent=secs;
+  let secs=60;
+  if(timerEl)timerEl.textContent=secs;
   qrTimerInt=setInterval(()=>{
-    secs--;if(timerEl)timerEl.textContent=secs;
-    if(secs<=0){clearInterval(qrTimerInt);if(rtdb)rtdb.ref('qr_sessions/'+code).remove();_qrConnectedCode=null;refreshQR();}
+    secs--;
+    if(timerEl)timerEl.textContent=secs;
+    if(secs<=0){
+      clearInterval(qrTimerInt);
+      if(_qrSessionRef){try{_qrSessionRef.off('value');}catch(e){}  _qrSessionRef.remove(); _qrSessionRef=null;}
+      _qrListening=false;
+      refreshQR();
+    }
   },1000);
 }
 
-// ── FIX 4: Sync direction modal (shown on PC after connection) ──
-function _showQRSyncModal(code, sessionData) {
-  const modal = document.getElementById('qr-sync-modal');
-  const sub   = document.getElementById('qr-sync-sub');
-  if (!modal) return;
-  if (sub) sub.textContent = `Connected from ${sessionData.name||'a device'} (${sessionData.email||''}). Choose how to sync:`;
-  modal.dataset.qrCode = code;
+// ── PC: show sync direction modal ─────────────────
+function _showQRSyncModal(code, phoneData){
+  const modal=document.getElementById('qr-sync-modal');
+  const sub=document.getElementById('qr-sync-sub');
+  if(!modal)return;
+  const phoneName=phoneData.phoneName||phoneData.name||'a device';
+  const phoneEmail=phoneData.phoneEmail||phoneData.email||'';
+  if(sub) sub.innerHTML=
+    'Connected from <b style="color:var(--text-primary)">'+phoneName+'</b>'
+    +(phoneEmail?' ('+phoneEmail+')':'')
+    +'<br><span style="font-size:11px;color:var(--text-muted)">Choose how to sync between devices</span>';
+  modal.dataset.qrCode=code;
+  modal.dataset.phoneName=phoneName;
+  modal.dataset.phoneEmail=phoneEmail;
   modal.classList.add('open');
 }
-function closeQRSyncModal() {
-  const modal = document.getElementById('qr-sync-modal');
-  if (modal) { modal.classList.remove('open'); modal.dataset.qrCode=''; }
+function closeQRSyncModal(){
+  const modal=document.getElementById('qr-sync-modal');
+  if(modal){modal.classList.remove('open');}
 }
 
-// Called when user clicks a sync option in the modal
-function doQRSync(direction) {
-  const modal = document.getElementById('qr-sync-modal');
-  const code  = modal?.dataset?.qrCode;
+// ── PC: user picked a sync direction ──────────────
+// This is the ONLY place PC executes — no double execution possible
+function doQRSync(direction){
+  const modal=document.getElementById('qr-sync-modal');
+  const code=modal?.dataset?.qrCode;
   closeQRSyncModal();
-  if (!code || !rtdb) return;
+  if(!code||!rtdb)return;
 
-  rtdb.ref('qr_sessions/'+code).update({ syncDirection: direction }).then(() => {
-    notify('success','QR Sync','Sync direction set: '+direction.replace('_',' → '));
-  });
-  // Execute immediately on this (PC) side too
-  rtdb.ref('qr_sessions/'+code).get().then(snap => {
-    if (snap.exists()) _executeQRSyncOnPC(direction, snap.val(), rtdb.ref('qr_sessions/'+code));
-  });
-}
+  const ref=rtdb.ref('qr_sessions/'+code);
 
-// PC executes the chosen sync direction
-function _executeQRSyncOnPC(direction, sessionData, sessionRef) {
-  if (!direction || direction === '_done') return;
-  // Mark as done so it doesn't fire again
-  sessionRef.update({ syncDirection: '_done' });
-
-  if (direction === 'phone_to_pc') {
-    // Load the phone user's account on this PC
-    notify('info','Sync','Switching to '+sessionData.name+"'s account...");
-    sessionStorage.setItem('freezy_user', JSON.stringify({
-      uid: sessionData.uid, name: sessionData.name, email: sessionData.email, photo: ''
-    }));
-    setTimeout(() => location.reload(), 1500);
-
-  } else if (direction === 'pc_to_phone') {
-    // Push THIS PC's session data to the RTDB so the phone can pick it up
-    sessionRef.update({
-      pcUser: { uid: userData.uid, name: userData.name, email: userData.email, photo: userData.photo||'' },
-      pcWallpaper: osSettings.wallpaper || ''
+  if(direction==='phone_to_pc'){
+    // PC takes the phone's account
+    // Phone already wrote phoneName/phoneEmail into the session when connecting
+    ref.get().then(snap=>{
+      if(!snap.exists()){notify('error','Sync','Session expired. Try again.');return;}
+      const d=snap.val();
+      const phoneUser={
+        uid:   d.phoneUid   || d.uid  || 'unknown',
+        name:  d.phoneName  || d.name || 'Unknown',
+        email: d.phoneEmail || d.email|| '',
+        photo: d.phonePhoto || d.photo|| ''
+      };
+      notify('info','Switching account','Loading '+phoneUser.name+"'s account on this PC...");
+      // Tell phone it's done
+      ref.update({result:'phone_to_pc_done'}).catch(()=>{});
+      // Small delay so phone can read the result, then switch
+      setTimeout(()=>{
+        sessionStorage.setItem('freezy_user', JSON.stringify(phoneUser));
+        location.reload();
+      }, 800);
     });
-    notify('success','Sync','PC session sent to phone. Phone will switch accounts.');
 
-  } else if (direction === 'mirror') {
-    // Future: implement screen mirroring via RTDB snapshots
-    notify('info','Mirror','Screen mirroring is coming soon. For now, use "Copy PC session to phone".');
-    sessionRef.remove();
+  } else if(direction==='pc_to_phone'){
+    // Push PC's full session to RTDB so phone picks it up
+    ref.update({
+      result:     'pc_to_phone',
+      targetUid:  userData.uid,
+      targetName: userData.name,
+      targetEmail:userData.email,
+      targetPhoto:userData.photo||'',
+      targetWallpaper: osSettings.wallpaper||''
+    }).then(()=>{
+      notify('success','Sent','PC session sent to phone. Phone will switch now.');
+    }).catch(()=>notify('error','Sync','Could not send to phone'));
+
+  } else if(direction==='mirror'){
+    notify('info','Mirror','Screen mirroring coming soon. Use "Copy PC session to phone" for now.');
+    ref.remove();
   }
 }
 
-// Phone: connect with code and show sync direction immediately
-function connectWithCode(codeArg) {
-  const code=(codeArg||document.getElementById('qr-enter-code')?.value?.trim()||'').toUpperCase();
+// ── PHONE: connect with code ───────────────────────
+function connectWithCode(codeArg){
+  const code=(codeArg||document.getElementById('qr-enter-code')?.value?.trim()||'').toUpperCase().replace(/\s/g,'');
   const statusEl=document.getElementById('qr-enter-status')||document.getElementById('qr-scan-status');
-  if(!code||code.length<4){if(statusEl)statusEl.textContent='Enter a valid code';return;}
-  if(!rtdb){notify('error','Error','Firebase not connected');return;}
+  const setStatus=(msg,color)=>{ if(statusEl){statusEl.textContent=msg;statusEl.style.color=color||'var(--text-secondary)';} };
+
+  if(!code||code.length<4){setStatus('Please enter a valid code','var(--accent-red)');return;}
+  if(!rtdb){notify('error','Error','Firebase not connected — check your internet');return;}
+
+  setStatus('Looking up code...','var(--text-muted)');
 
   rtdb.ref('qr_sessions/'+code).get().then(snap=>{
-    if(!snap.exists()){if(statusEl)statusEl.textContent='❌ Code not found or expired';return;}
-    const data=snap.val();
-    if(Date.now()>data.expires){if(statusEl)statusEl.textContent='❌ Code expired. Ask for a new one.';rtdb.ref('qr_sessions/'+code).remove();return;}
+    if(!snap.exists()){setStatus('❌ Code not found. Make sure the PC is showing QR Connect.','var(--accent-red)');return;}
+    const d=snap.val();
+    if(Date.now()>d.expires){
+      setStatus('❌ Code expired. Ask the PC to refresh.','var(--accent-red)');
+      rtdb.ref('qr_sessions/'+code).remove();
+      return;
+    }
 
-    // Mark as connected — this triggers the PC to show the sync direction modal
-    rtdb.ref('qr_sessions/'+code).update({connected:true}).then(()=>{
-      if(statusEl){statusEl.textContent='✅ Connected to '+data.name+"'s PC! Waiting for sync choice...";statusEl.style.color='var(--accent-green)';}
-      notify('success','Connected','Synced with '+data.name+'. Choose sync direction on the PC.');
+    const pcName=d.pcName||'the PC';
+    setStatus('Connecting to '+pcName+'...','var(--text-muted)');
 
-      // Phone also listens for the PC's sync direction choice
-      // so that 'pc_to_phone' can be executed here automatically
-      rtdb.ref('qr_sessions/'+code).on('value', snapLive => {
-        if (!snapLive.exists()) return;
-        const d = snapLive.val();
-        if (d.syncDirection && d.syncDirection !== '_done') {
-          rtdb.ref('qr_sessions/'+code).off('value'); // stop listening
-          _executeQRSyncOnPhone(d.syncDirection, d, code);
+    // Write phone's own info into session so PC's modal shows the right name
+    rtdb.ref('qr_sessions/'+code).update({
+      connected:  true,
+      phoneUid:   userData.uid,
+      phoneName:  userData.name,
+      phoneEmail: userData.email,
+      phonePhoto: userData.photo||''
+    }).then(()=>{
+      setStatus('✅ Connected to '+pcName+"'s PC!\nChoose sync direction on the PC screen.",'var(--accent-green)');
+      notify('success','Connected','Choose sync direction on the PC');
+
+      // Phone now listens for the 'result' field which PC writes when user picks direction
+      let _phoneListened=false;
+      rtdb.ref('qr_sessions/'+code).on('value', snapLive=>{
+        if(!snapLive.exists())return;
+        const live=snapLive.val();
+
+        if(live.result && !_phoneListened){
+          _phoneListened=true;
+          rtdb.ref('qr_sessions/'+code).off('value');
+
+          if(live.result==='pc_to_phone'){
+            // Switch this phone to the PC's account
+            const target={
+              uid:   live.targetUid,
+              name:  live.targetName,
+              email: live.targetEmail,
+              photo: live.targetPhoto||''
+            };
+            notify('info','Switching','Loading '+target.name+"'s account on this phone...");
+            sessionStorage.setItem('freezy_user',JSON.stringify(target));
+            if(live.targetWallpaper){
+              osSettings.wallpaper=live.targetWallpaper;
+              localStorage.setItem('frz_os_settings',JSON.stringify(osSettings));
+            }
+            rtdb.ref('qr_sessions/'+code).remove();
+            setTimeout(()=>location.reload(),800);
+
+          } else if(live.result==='phone_to_pc_done'){
+            // PC already switched to our account — just confirm
+            setStatus('✅ Your account is now active on the PC!','var(--accent-green)');
+            notify('success','Done','Your account is now loaded on the PC');
+            rtdb.ref('qr_sessions/'+code).remove();
+          }
         }
       });
-    });
-  }).catch(()=>{if(statusEl)statusEl.textContent='❌ Connection error. Try again.';});
-}
-
-// Phone executes the chosen sync direction
-function _executeQRSyncOnPhone(direction, sessionData, code) {
-  if (direction === 'pc_to_phone') {
-    // Switch this phone to the PC's account
-    if (sessionData.pcUser) {
-      notify('info','Sync','Switching to PC account: '+sessionData.pcUser.name);
-      sessionStorage.setItem('freezy_user', JSON.stringify(sessionData.pcUser));
-      // Also apply PC wallpaper if provided
-      if (sessionData.pcWallpaper) { osSettings.wallpaper=sessionData.pcWallpaper; applyWallpaper(sessionData.pcWallpaper); }
-      setTimeout(()=>location.reload(), 1500);
-    }
-  } else if (direction === 'phone_to_pc') {
-    // Phone user: PC already switched — just confirm
-    notify('success','Sync','Your account has been loaded on the PC.');
-    const statusEl = document.getElementById('qr-enter-status')||document.getElementById('qr-scan-status');
-    if (statusEl) { statusEl.textContent='✅ Your account is now active on the PC!'; statusEl.style.color='var(--accent-green)'; }
-    rtdb.ref('qr_sessions/'+code).remove();
-  } else if (direction === 'mirror') {
-    notify('info','Mirror','Mirror mode coming soon.');
-  }
+    }).catch(()=>setStatus('❌ Connection error. Check your internet and try again.','var(--accent-red)'));
+  }).catch(()=>setStatus('❌ Could not reach database. Check your internet.','var(--accent-red)'));
 }
 
 // ══════════════════════════════════════════════════
